@@ -39,7 +39,7 @@ async def _process_document(document_id: uuid.UUID, tenant_id: uuid.UUID, conten
                     tenant_id=tenant_id,
                     content=chunk_content,
                     embedding=embedding,
-                    metadata={"chunk_index": i, "total_chunks": len(chunks)},
+                    chunk_metadata={"chunk_index": i, "total_chunks": len(chunks)},
                     chunk_index=i,
                 )
                 db.add(chunk)

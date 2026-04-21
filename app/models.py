@@ -50,7 +50,7 @@ class DocumentChunk(Base):
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding = mapped_column(Vector(1536))
-    metadata: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    chunk_metadata: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
 
     document: Mapped["Document"] = relationship(back_populates="chunks")

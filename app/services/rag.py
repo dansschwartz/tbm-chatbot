@@ -39,7 +39,7 @@ async def retrieve_relevant_chunks(
         SELECT
             dc.id,
             dc.content,
-            dc.metadata,
+            dc.chunk_metadata,
             dc.chunk_index,
             d.title AS document_title,
             d.source_url,
