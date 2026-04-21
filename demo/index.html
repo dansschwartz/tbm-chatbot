@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DC Soccer Club</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Montserrat', sans-serif; color: #333; background: #fff; }
+    
+    /* Top bar */
+    .top-bar { background: #1a1a2e; color: #fff; font-size: 12px; padding: 6px 40px; display: flex; justify-content: space-between; align-items: center; }
+    .top-bar a { color: #ccc; text-decoration: none; margin: 0 6px; font-size: 12px; }
+    
+    /* Nav */
+    nav { background: #0f0f23; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #c41e3a; }
+    .nav-logo { padding: 10px 0; }
+    .nav-logo img { height: 50px; }
+    .nav-links { display: flex; gap: 0; }
+    .nav-links a { color: #fff; text-decoration: none; font-size: 12px; font-weight: 600; text-transform: uppercase; padding: 20px 14px; transition: background 0.2s; letter-spacing: 0.5px; }
+    .nav-links a:hover { background: #c41e3a; }
+    
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+      color: #fff;
+      text-align: center;
+      padding: 80px 40px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="2"/></svg>') center/400px repeat;
+    }
+    .hero-content { position: relative; z-index: 1; }
+    .hero-subtitle { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: #aaa; margin-bottom: 10px; }
+    .hero h1 { font-size: 52px; font-weight: 900; margin-bottom: 15px; line-height: 1.1; }
+    .hero p { font-size: 16px; color: #bbb; margin-bottom: 30px; max-width: 600px; margin-left: auto; margin-right: auto; }
+    .hero-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+    .btn { display: inline-block; padding: 14px 32px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; text-decoration: none; cursor: pointer; transition: all 0.3s; }
+    .btn-primary { background: #c41e3a; color: #fff; border: 2px solid #c41e3a; }
+    .btn-primary:hover { background: #a01830; border-color: #a01830; }
+    .btn-outline { background: transparent; color: #fff; border: 2px solid #fff; }
+    .btn-outline:hover { background: #fff; color: #0f0f23; }
+    
+    /* Announcement bar */
+    .announcement { background: #c41e3a; color: #fff; text-align: center; padding: 14px 40px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    
+    /* Content sections */
+    .section { padding: 60px 40px; max-width: 1200px; margin: 0 auto; }
+    .section-dark { background: #f5f5f7; }
+    
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 30px; margin-top: 30px; }
+    .card { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); transition: transform 0.2s; }
+    .card:hover { transform: translateY(-3px); }
+    .card-img { width: 100%; height: 200px; object-fit: cover; background: linear-gradient(135deg, #1a1a3e, #2a2a5e); display: flex; align-items: center; justify-content: center; }
+    .card-img-placeholder { color: #fff; font-size: 48px; opacity: 0.3; }
+    .card-body { padding: 24px; }
+    .card-body h3 { font-size: 16px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; color: #1a1a2e; }
+    .card-body p { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 16px; }
+    .card-btn { display: inline-block; background: #c41e3a; color: #fff; padding: 10px 24px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; text-decoration: none; }
+    
+    /* Sponsors */
+    .sponsors { text-align: center; padding: 50px 40px; background: #fff; }
+    .sponsors h2 { font-size: 28px; font-style: italic; color: #1a1a2e; margin-bottom: 20px; }
+    .sponsor-logos { display: flex; gap: 40px; justify-content: center; align-items: center; flex-wrap: wrap; opacity: 0.4; margin-top: 20px; }
+    .sponsor-placeholder { width: 120px; height: 50px; background: #ddd; border-radius: 4px; }
+    
+    /* Footer */
+    footer { background: #0f0f23; color: #aaa; padding: 40px; }
+    .footer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; max-width: 1200px; margin: 0 auto; }
+    .footer-col h4 { color: #fff; font-size: 14px; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px; }
+    .footer-col p, .footer-col a { font-size: 13px; color: #888; text-decoration: none; line-height: 2; display: block; }
+    .footer-col a:hover { color: #fff; }
+    .footer-bottom { text-align: center; padding-top: 30px; margin-top: 30px; border-top: 1px solid #222; font-size: 11px; color: #555; max-width: 1200px; margin-left: auto; margin-right: auto; }
+    
+    /* Social */
+    .social { display: flex; gap: 12px; justify-content: center; margin: 20px 0; }
+    .social a { display: inline-flex; width: 36px; height: 36px; background: #1a1a3e; color: #fff; border-radius: 50%; align-items: center; justify-content: center; text-decoration: none; font-size: 14px; transition: background 0.2s; }
+    .social a:hover { background: #c41e3a; }
+    
+    /* Demo banner */
+    .demo-banner { background: #fef3cd; border-bottom: 2px solid #ffc107; padding: 12px 40px; text-align: center; font-size: 13px; color: #856404; }
+    .demo-banner strong { color: #664d03; }
+    
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 32px; }
+      .nav-links { display: none; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Demo banner -->
+  <div class="demo-banner">
+    ⚽ <strong>DEMO:</strong> This is a preview of the AI-powered chatbot for DC Soccer Club. Try the chat widget in the bottom-right corner!
+  </div>
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div>
+      <a href="#">🇺🇸 EN</a>
+      <a href="#">🇪🇸 ES</a>
+    </div>
+    <div>
+      <a href="#">📧 Contact</a>
+    </div>
+  </div>
+  
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-logo">
+      <span style="color:#fff;font-weight:900;font-size:20px;">⚽ DC SOCCER CLUB</span>
+    </div>
+    <div class="nav-links">
+      <a href="#">Home</a>
+      <a href="#">New to the Club?</a>
+      <a href="#">About</a>
+      <a href="#">Tots</a>
+      <a href="#">Recreational</a>
+      <a href="#">Pre-Travel</a>
+      <a href="#">Travel</a>
+      <a href="#">Camps</a>
+      <a href="#">Clinics</a>
+      <a href="#">News</a>
+    </div>
+  </nav>
+  
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-subtitle">Welcome to</div>
+      <h1>DC SOCCER CLUB</h1>
+      <p>Soccer FOR ALL. From Tots to Academy.<br>Serving 7,500+ players U4–U19 across Washington, DC.</p>
+      <div class="hero-buttons">
+        <a href="#" class="btn btn-primary">Upcoming Registrations</a>
+        <a href="#" class="btn btn-outline">New to the Club?</a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Announcement -->
+  <div class="announcement">
+    DC Soccer Club Accepted into MLS NEXT Academy Division and Girls Academy (GA) ASPIRE Beginning 2026–2027 Season
+  </div>
+  
+  <!-- Content Cards -->
+  <div class="section">
+    <div class="cards">
+      <div class="card">
+        <div class="card-img"><span class="card-img-placeholder">👕</span></div>
+        <div class="card-body">
+          <h3>DC Soccer Club Fan Apparel Available</h3>
+          <p>DC Soccer Club merch is now available on our online Spirit Wear store! Choose shipping to your home or pick up at PJ's Soccer Shop of Bethesda.</p>
+          <a href="#" class="card-btn">Go to Online Store</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img"><span class="card-img-placeholder">📅</span></div>
+        <div class="card-body">
+          <h3>Age Group Change: Travel Teams Moving to School Year Cut Off</h3>
+          <p>Learn about the age group change for travel teams beginning in the 2026-2027 season to align teams by school year (Aug. 1 - July 31).</p>
+          <a href="#" class="card-btn">Read More</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img"><span class="card-img-placeholder">📧</span></div>
+        <div class="card-body">
+          <h3>Never Miss an Update — Join Our Newsletter</h3>
+          <p>Subscribe to our newsletter and receive monthly emails with updates on what is happening in our club and in our community.</p>
+          <a href="#" class="card-btn">Subscribe to Newsletter</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Social + Sponsors -->
+  <div style="text-align:center; padding: 30px 40px;">
+    <div class="social">
+      <a href="#">f</a>
+      <a href="#">𝕏</a>
+      <a href="#">📷</a>
+      <a href="#">▶</a>
+      <a href="#">in</a>
+    </div>
+    <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:2px;color:#888;margin-top:10px;">Connect with Us</h3>
+  </div>
+  
+  <div class="sponsors">
+    <h2><em>Thank You to Our Sponsors and Partners</em></h2>
+    <div class="sponsor-logos">
+      <div class="sponsor-placeholder"></div>
+      <div class="sponsor-placeholder"></div>
+      <div class="sponsor-placeholder"></div>
+      <div class="sponsor-placeholder"></div>
+      <div class="sponsor-placeholder"></div>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <p>Club Confirmed</p>
+        <p>Address: 2201 Wisconsin Ave NW, Suite 200,<br>Washington, DC 20007</p>
+      </div>
+      <div class="footer-col">
+        <h4>Site Links</h4>
+        <a href="#">Home</a>
+        <a href="#">New to the Club?</a>
+        <a href="#">About</a>
+        <a href="#">Recreational</a>
+        <a href="#">Travel</a>
+        <a href="#">Camps</a>
+        <a href="#">Clinics</a>
+        <a href="#">News</a>
+      </div>
+      <div class="footer-col">
+        <h4>Connect</h4>
+        <p>Follow us on social media for the latest updates on programs, events, and community news.</p>
+        <div class="social" style="justify-content:flex-start;margin-top:10px;">
+          <a href="#">f</a>
+          <a href="#">𝕏</a>
+          <a href="#">📷</a>
+          <a href="#">▶</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      This website is powered by PlayMetrics software and is connected to and subject to the DC Soccer Club privacy policy. © 2026 DC Soccer Club
+    </div>
+  </footer>
+
+  <!-- CHATBOT WIDGET -->
+  <!-- This is what the client would add to their Squarespace Code Injection -->
+  <script>
+    // Inline demo widget since the backend may not be deployed yet
+    (function() {
+      const WIDGET_STYLES = `
+        .dcsc-chat-widget { position:fixed; bottom:20px; right:20px; z-index:99999; font-family:'Montserrat',sans-serif; }
+        .dcsc-chat-bubble { width:60px; height:60px; border-radius:50%; background:#c41e3a; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 20px rgba(196,30,58,0.4); transition:transform 0.2s; font-size:24px; }
+        .dcsc-chat-bubble:hover { transform:scale(1.1); }
+        .dcsc-chat-window { display:none; width:380px; height:520px; background:#fff; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.2); overflow:hidden; flex-direction:column; position:absolute; bottom:75px; right:0; }
+        .dcsc-chat-window.open { display:flex; }
+        .dcsc-chat-header { background:linear-gradient(135deg,#0f0f23,#1a1a3e); color:#fff; padding:18px 20px; display:flex; align-items:center; gap:12px; }
+        .dcsc-chat-header-avatar { width:36px; height:36px; background:#c41e3a; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; }
+        .dcsc-chat-header-info h4 { font-size:14px; font-weight:700; margin:0; }
+        .dcsc-chat-header-info p { font-size:11px; color:#aaa; margin:2px 0 0; }
+        .dcsc-chat-close { margin-left:auto; background:none; border:none; color:#fff; font-size:20px; cursor:pointer; opacity:0.7; }
+        .dcsc-chat-close:hover { opacity:1; }
+        .dcsc-chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; background:#f8f9fa; }
+        .dcsc-msg { max-width:85%; padding:10px 14px; border-radius:12px; font-size:13px; line-height:1.5; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+        .dcsc-msg-bot { background:#fff; color:#333; align-self:flex-start; border:1px solid #e8e8e8; border-bottom-left-radius:4px; }
+        .dcsc-msg-user { background:#c41e3a; color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+        .dcsc-msg-typing { background:#fff; border:1px solid #e8e8e8; align-self:flex-start; border-bottom-left-radius:4px; padding:12px 20px; }
+        .dcsc-msg-typing span { display:inline-block; width:7px; height:7px; background:#999; border-radius:50%; margin:0 2px; animation:bounce 1.2s infinite; }
+        .dcsc-msg-typing span:nth-child(2) { animation-delay:0.2s; }
+        .dcsc-msg-typing span:nth-child(3) { animation-delay:0.4s; }
+        @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+        .dcsc-chat-input { display:flex; border-top:1px solid #e8e8e8; background:#fff; padding:4px; }
+        .dcsc-chat-input input { flex:1; border:none; padding:12px 16px; font-size:13px; font-family:inherit; outline:none; }
+        .dcsc-chat-input button { background:#c41e3a; color:#fff; border:none; padding:12px 18px; cursor:pointer; font-weight:700; font-size:13px; border-radius:8px; margin:4px; }
+        .dcsc-chat-input button:hover { background:#a01830; }
+        .dcsc-powered { text-align:center; padding:6px; font-size:10px; color:#999; background:#fff; }
+      `;
+
+      const style = document.createElement('style');
+      style.textContent = WIDGET_STYLES;
+      document.head.appendChild(style);
+
+      const widget = document.createElement('div');
+      widget.className = 'dcsc-chat-widget';
+      widget.innerHTML = `
+        <div class="dcsc-chat-window" id="chatWindow">
+          <div class="dcsc-chat-header">
+            <div class="dcsc-chat-header-avatar">⚽</div>
+            <div class="dcsc-chat-header-info">
+              <h4>DC Soccer Club Assistant</h4>
+              <p>Ask me anything about our programs!</p>
+            </div>
+            <button class="dcsc-chat-close" onclick="toggleChat()">✕</button>
+          </div>
+          <div class="dcsc-chat-messages" id="chatMessages">
+            <div class="dcsc-msg dcsc-msg-bot">
+              Hi! 👋 I'm the DC Soccer Club assistant. I can help you with information about our programs, registration, tryouts, schedules, financial aid, and more. What would you like to know?            </div>
+          </div>
+          <div class="dcsc-chat-input">
+            <input type="text" id="chatInput" placeholder="Ask about programs, registration, tryouts..." onkeypress="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+          </div>
+          <div class="dcsc-powered">Powered by TBM Chatbot</div>
+        </div>
+        <div class="dcsc-chat-bubble" onclick="toggleChat()">💬</div>
+      `;
+      document.body.appendChild(widget);
+
+      // Demo responses based on keywords
+      const DEMO_RESPONSES = {
+        'registration': 'DC Soccer Club offers registration for Spring and Fall seasons. The Spring 2026 Rec League costs $145 (regular), with early bird discounts of $20 off. Pre-K Plus is $225. Registration is done through PlayMetrics. Would you like to know about a specific program?',
+        'tryout': 'Travel tryouts for the 2026-2027 season are coming up! Rising U11-U19 tryouts begin the week of April 27, and U8-U10 begin the week of May 18. All players must register to attend. Financial aid applications open April 20. Would you like details for a specific age group?',
+        'financial': 'DC Soccer Club awards $250,000-$350,000 in financial aid annually. Aid applies to most programs and must be requested through PlayMetrics before registering. You\'ll need either a Free/Reduced Lunch letter or your most recent 1040 tax form. Decisions come within 5 business days. Need help applying?',
+        'camp': 'We offer several camp types! Summer Camps (K-8th, $350 full day/$200 half day, June-August), Elite Camps (Travel players U9-U19, $200, July), and Holiday Camps ($95/day during school breaks). All camps are led by professional coaching staff. Which camp interests you?',
+        'tot': 'Our Tots Program is for ages 3-5! It\'s play-based learning with 45-minute sessions, groups of 8-10 players per coach. Spring 2026 runs at multiple locations (Hardy MS, John Lewis ES, Joe Cole Rec, and more) on Saturdays and Sundays. Cost is $185 + processing fees. Financial aid is available!',
+        'rec': 'The Rec League is our largest program with 3,500+ players from Pre-K to High School! It includes 1 practice/week plus 8 Saturday games. Cost is $145 (regular registration). Coed and girls-only divisions available. Players are grouped by school/neighborhood. Spring 2026 games start April 18!',
+        'travel': 'Our Travel Program has three levels: Select ($1,700-$1,750), Travel ($2,100-$3,195), and Academy ($3,395-$3,500). It\'s a 10-month commitment with tryouts in spring. Beginning 2026-2027, Boys Academy competes in MLS NEXT and Girls Academy in GA ASPIRE. Would you like info about a specific level?',
+        'mls': 'Exciting news! DC Soccer Club has been accepted into MLS NEXT Academy Division for 2026-2027! Our top Boys Academy teams U13-U19 will compete against clubs like Loudoun Soccer, McLean Youth Soccer, and FC Richmond. Players CAN participate in high school soccer. Club fees are estimated at $3,300-$3,500.',
+        'contact': 'Here are key contacts:\n• Executive Director: Greg Andrulis (gregandrulis@dcsoccerclub.org)\n• Director of Soccer: Matt Arrington\n• Rec Program Manager: Rebeca Mercado\n• Financial Aid: financialaid@dcsoccerclub.org\n• Programs Director: Gimale Essacu\n\nFor rec questions, contact your Age Group Commissioner (AGC).',
+        'futsal': 'Winter Futsal League runs January-March on Saturdays outdoors on turf. It\'s a games-only format (no practices), 6 games for $150. Open to K-High School, rec and select level players. Teams are 4v4 (K-1st) or 5v5 (2nd-HS). Uniforms not required — just match team colors!',
+        'weather': 'DC Soccer Club follows U.S. Soccer weather guidelines using the WeatherBug app. Activities are modified or canceled for extreme cold, heat, or lightning. If you see lightning or hear thunder, all play stops for 30 minutes. Cancellations are communicated via PlayMetrics 90 minutes before activities when possible.',
+        'default': 'I can help with information about DC Soccer Club programs, registration, tryouts, camps, clinics, financial aid, schedules, policies, and more. Could you tell me more about what you\'re looking for?'
+      };
+
+      function toggleChat() {
+        const win = document.getElementById('chatWindow');
+        win.classList.toggle('open');
+        if (win.classList.contains('open')) {
+          document.getElementById('chatInput').focus();
+        }
+      }
+
+      function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+        
+        const messages = document.getElementById('chatMessages');
+        
+        // Add user message
+        const userMsg = document.createElement('div');
+        userMsg.className = 'dcsc-msg dcsc-msg-user';
+        userMsg.textContent = text;
+        messages.appendChild(userMsg);
+        input.value = '';
+        
+        // Show typing indicator
+        const typing = document.createElement('div');
+        typing.className = 'dcsc-msg dcsc-msg-typing';
+        typing.innerHTML = '<span></span><span></span><span></span>';
+        messages.appendChild(typing);
+        messages.scrollTop = messages.scrollHeight;
+        
+        // Find best matching response
+        setTimeout(() => {
+          typing.remove();
+          const lower = text.toLowerCase();
+          let response = DEMO_RESPONSES.default;
+          for (const [key, val] of Object.entries(DEMO_RESPONSES)) {
+            if (key !== 'default' && lower.includes(key)) {
+              response = val;
+              break;
+            }
+          }
+          
+          const botMsg = document.createElement('div');
+          botMsg.className = 'dcsc-msg dcsc-msg-bot';
+          botMsg.textContent = response;
+          messages.appendChild(botMsg);
+          messages.scrollTop = messages.scrollHeight;
+        }, 800 + Math.random() * 700);
+      }
+
+      window.toggleChat = toggleChat;
+      window.sendMessage = sendMessage;
+    })();
+  </script>
+
+</body>
+</html>
