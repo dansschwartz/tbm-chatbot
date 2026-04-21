@@ -1,0 +1,9 @@
+[project]
+name = "tbm-chatbot"
+version = "1.0.0"
+description = "Multi-tenant RAG chatbot service for not-for-profit organizations"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
