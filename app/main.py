@@ -5,7 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from sqlalchemy import text
+
 from app.config import settings
+from app.database import engine
+from app.models import Base
 from app.routers import admin, chat, documents, tenants
 from app.services.openai_client import close_client
 
@@ -35,6 +39,15 @@ app.include_router(admin.router)
 
 # Serve widget static files
 app.mount("/widget", StaticFiles(directory="widget"), name="widget")
+
+
+@app.on_event("startup")
+async def startup():
+    """Create tables and enable pgvector on first run."""
+    async with engine.begin() as conn:
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        await conn.run_sync(Base.metadata.create_all)
+    logging.getLogger("app").info("Database tables ready")
 
 
 @app.get("/health")

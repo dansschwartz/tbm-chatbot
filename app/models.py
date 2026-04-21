@@ -56,7 +56,7 @@ class DocumentChunk(Base):
     document: Mapped["Document"] = relationship(back_populates="chunks")
 
     __table_args__ = (
-        Index("ix_chunks_tenant_embedding", "tenant_id", postgresql_using="hnsw", postgresql_with={"m": 16, "ef_construction": 64}),
+        Index("ix_chunks_tenant_id", "tenant_id"),
     )
 
 
