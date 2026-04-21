@@ -43,6 +43,9 @@ app.mount("/widget", StaticFiles(directory="widget"), name="widget")
 # Serve demo page
 app.mount("/demo", StaticFiles(directory="demo", html=True), name="demo")
 
+# Serve demo page
+app.mount("/demo", StaticFiles(directory="demo", html=True), name="demo")
+
 
 @app.on_event("startup")
 async def startup():
