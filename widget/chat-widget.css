@@ -5,6 +5,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
 }
 
+/* --- Launcher bubble --- */
 .tbm-chat-bubble {
     position: fixed;
     bottom: 20px;
@@ -35,12 +36,58 @@
     fill: currentColor;
 }
 
+/* --- Feature 6: Launcher teaser --- */
+.tbm-teaser {
+    position: fixed;
+    bottom: 88px;
+    right: 20px;
+    background: #ffffff;
+    color: #1e293b;
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    font-size: 14px;
+    max-width: 260px;
+    z-index: 99998;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: tbm-teaser-in 0.4s ease-out;
+    cursor: pointer;
+}
+
+.tbm-teaser-text {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.tbm-teaser-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.tbm-teaser-close:hover {
+    color: #475569;
+}
+
+@keyframes tbm-teaser-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Chat window --- */
 .tbm-chat-window {
     position: fixed;
     bottom: 90px;
     right: 20px;
     width: 380px;
-    height: 520px;
+    height: 540px;
     max-height: calc(100vh - 120px);
     background: #ffffff;
     border-radius: 16px;
@@ -61,6 +108,7 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* --- Header --- */
 .tbm-chat-header {
     padding: 16px 20px;
     background: var(--tbm-primary, #2563eb);
@@ -104,6 +152,75 @@
     opacity: 1;
 }
 
+/* --- Feature 8: Away indicator --- */
+.tbm-away-indicator {
+    background: #fef3cd;
+    color: #856404;
+    padding: 8px 16px;
+    font-size: 12px;
+    text-align: center;
+    border-bottom: 1px solid #ffc107;
+    flex-shrink: 0;
+}
+
+/* --- Feature 3: Pre-chat form --- */
+.tbm-prechat-form {
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    gap: 14px;
+}
+
+.tbm-prechat-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.tbm-prechat-form input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.tbm-prechat-form input:focus {
+    border-color: var(--tbm-primary, #2563eb);
+}
+
+.tbm-prechat-submit {
+    width: 100%;
+    padding: 12px;
+    background: var(--tbm-primary, #2563eb);
+    color: var(--tbm-text, #ffffff);
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.tbm-prechat-submit:hover {
+    opacity: 0.9;
+}
+
+/* --- Chat main area --- */
+.tbm-chat-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* --- Messages --- */
 .tbm-chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -136,6 +253,7 @@
     border-bottom-left-radius: 4px;
 }
 
+/* --- Sources --- */
 .tbm-chat-sources {
     margin-top: 8px;
     padding-top: 8px;
@@ -153,12 +271,90 @@
     text-decoration: underline;
 }
 
+/* --- Feature 5: Quick reply buttons --- */
+.tbm-quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.tbm-quick-reply-btn {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 16px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.tbm-quick-reply-btn:hover {
+    background: var(--tbm-primary, #2563eb);
+    color: var(--tbm-text, #ffffff);
+    border-color: var(--tbm-primary, #2563eb);
+}
+
+/* --- Feature 7: Feedback buttons --- */
+.tbm-feedback {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    padding-top: 6px;
+}
+
+.tbm-feedback-btn {
+    background: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.tbm-feedback-btn:hover {
+    color: #475569;
+    border-color: #94a3b8;
+}
+
+.tbm-feedback-btn.tbm-feedback-active {
+    color: var(--tbm-primary, #2563eb);
+    border-color: var(--tbm-primary, #2563eb);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.tbm-feedback-btn:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.tbm-feedback-btn:disabled:hover {
+    color: #94a3b8;
+    border-color: #e2e8f0;
+}
+
+.tbm-feedback-btn.tbm-feedback-active:disabled {
+    opacity: 1;
+    color: var(--tbm-primary, #2563eb);
+    border-color: var(--tbm-primary, #2563eb);
+}
+
+/* --- Typing indicator --- */
 .tbm-chat-typing {
     align-self: flex-start;
     padding: 10px 14px;
     background: #f1f5f9;
     border-radius: 12px;
     display: none;
+    margin: 0 16px 8px;
 }
 
 .tbm-chat-typing.tbm-visible {
@@ -183,6 +379,7 @@
     40% { transform: scale(1); }
 }
 
+/* --- Input area --- */
 .tbm-chat-input-area {
     padding: 12px 16px;
     border-top: 1px solid #e2e8f0;
@@ -232,6 +429,7 @@
     fill: currentColor;
 }
 
+/* --- Footer --- */
 .tbm-powered-by {
     text-align: center;
     padding: 6px;
@@ -241,7 +439,7 @@
     flex-shrink: 0;
 }
 
-/* Mobile responsive */
+/* --- Mobile responsive --- */
 @media (max-width: 480px) {
     .tbm-chat-window {
         width: calc(100vw - 16px);
@@ -249,5 +447,10 @@
         bottom: 80px;
         right: 8px;
         border-radius: 12px;
+    }
+    .tbm-teaser {
+        right: 8px;
+        bottom: 88px;
+        max-width: calc(100vw - 90px);
     }
 }

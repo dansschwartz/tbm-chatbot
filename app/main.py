@@ -19,7 +19,7 @@ logger.info(f"DATABASE_URL (masked): {masked_url}")
 
 from app.database import engine, db_url as resolved_db_url
 from app.models import Base
-from app.routers import admin, chat, documents, tenants
+from app.routers import admin, chat, contact, documents, feedback, tenants
 from app.services.openai_client import close_client
 
 masked_resolved = re.sub(r'://([^:]+):([^@]+)@', r'://\1:***@', resolved_db_url)
@@ -45,6 +45,8 @@ app.include_router(chat.router)
 app.include_router(tenants.router)
 app.include_router(documents.router)
 app.include_router(admin.router)
+app.include_router(contact.router)
+app.include_router(feedback.router)
 
 # Serve widget static files
 app.mount("/widget", StaticFiles(directory="widget"), name="widget")

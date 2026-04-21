@@ -6,8 +6,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.middleware.auth import require_admin_key
-from app.models import Conversation, Document, Message, Tenant
-from app.schemas import ConversationLog, MessageLog, UsageStats
+from app.models import Conversation, Document, Message, MessageFeedback, ContactRequest, Tenant
+from app.schemas import (
+    ContactResponse,
+    ConversationLog,
+    FeedbackResponse,
+    MessageLog,
+    UnansweredMessage,
+    UsageStats,
+)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -65,6 +72,9 @@ async def get_conversations(
             Conversation.session_id,
             Conversation.started_at,
             Conversation.last_message_at,
+            Conversation.visitor_name,
+            Conversation.visitor_email,
+            Conversation.tags,
             func.count(Message.id).label("message_count"),
         )
         .outerjoin(Message, Message.conversation_id == Conversation.id)
@@ -81,6 +91,9 @@ async def get_conversations(
             started_at=row.started_at,
             last_message_at=row.last_message_at,
             message_count=row.message_count,
+            visitor_name=row.visitor_name,
+            visitor_email=row.visitor_email,
+            tags=row.tags,
         )
         for row in rows
     ]
@@ -98,3 +111,90 @@ async def get_messages(
         .order_by(Message.created_at)
     )
     return result.scalars().all()
+
+
+# Feature 2: Admin endpoint to list contact requests
+@router.get("/contacts", response_model=list[ContactResponse])
+async def get_contacts(
+    tenant_id: uuid.UUID,
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ContactRequest)
+        .where(ContactRequest.tenant_id == tenant_id)
+        .order_by(ContactRequest.created_at.desc())
+    )
+    return result.scalars().all()
+
+
+# Feature 7: Admin endpoint to view feedback
+@router.get("/feedback", response_model=list[FeedbackResponse])
+async def get_feedback(
+    tenant_id: uuid.UUID,
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(MessageFeedback)
+        .where(MessageFeedback.tenant_id == tenant_id)
+        .order_by(MessageFeedback.created_at.desc())
+    )
+    return result.scalars().all()
+
+
+# Feature 9: Admin endpoint to view unanswered/fallback messages
+@router.get("/unanswered", response_model=list[UnansweredMessage])
+async def get_unanswered(
+    tenant_id: uuid.UUID,
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return fallback bot messages paired with the user question that triggered them."""
+    # Get fallback assistant messages for this tenant
+    result = await db.execute(
+        select(
+            Message.id.label("message_id"),
+            Message.conversation_id,
+            Conversation.session_id,
+            Message.content.label("bot_response"),
+            Message.created_at,
+        )
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .where(
+            Conversation.tenant_id == tenant_id,
+            Message.role == "assistant",
+            Message.is_fallback.is_(True),
+        )
+        .order_by(Message.created_at.desc())
+        .limit(100)
+    )
+    rows = result.all()
+
+    unanswered = []
+    for row in rows:
+        # Find the user message immediately before this bot response
+        user_msg_result = await db.execute(
+            select(Message.content)
+            .where(
+                Message.conversation_id == row.conversation_id,
+                Message.role == "user",
+                Message.created_at < row.created_at,
+            )
+            .order_by(Message.created_at.desc())
+            .limit(1)
+        )
+        user_question = user_msg_result.scalar_one_or_none() or "(unknown)"
+
+        unanswered.append(
+            UnansweredMessage(
+                message_id=row.message_id,
+                conversation_id=row.conversation_id,
+                session_id=row.session_id,
+                user_question=user_question,
+                bot_response=row.bot_response,
+                created_at=row.created_at,
+            )
+        )
+
+    return unanswered

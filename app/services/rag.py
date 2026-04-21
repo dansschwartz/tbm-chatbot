@@ -15,15 +15,23 @@ SYSTEM_PROMPT_TEMPLATE = """You are {tenant_name}'s AI assistant.
 
 {custom_system_prompt}
 
+{guidance_section}
+
+{contact_section}
+
 IMPORTANT INSTRUCTIONS:
 - ONLY answer questions based on the provided context below.
 - If the context does not contain information to answer the question, say "I don't have information about that. Please contact us directly for help with this topic."
 - When you use information from the context, be helpful and conversational.
 - Do not make up information or draw from knowledge outside the provided context.
 - If sources are available, naturally reference them in your response.
+- If you cannot answer a question or the user asks to speak with someone, tell them they can use the contact form below the chat.{support_email_line}
 
 CONTEXT:
 {context}"""
+
+# Similarity threshold below which we consider the response a fallback
+FALLBACK_SIMILARITY_THRESHOLD = 0.3
 
 
 async def retrieve_relevant_chunks(
@@ -78,6 +86,10 @@ async def run_rag_pipeline(
 
     chunks = await retrieve_relevant_chunks(db, tenant.id, query_embedding)
 
+    # Feature 9: Detect fallback — no relevant chunks above threshold
+    relevant_chunks = [c for c in chunks if c["similarity"] > FALLBACK_SIMILARITY_THRESHOLD]
+    is_fallback = len(relevant_chunks) == 0
+
     if chunks:
         context_parts = []
         for i, chunk in enumerate(chunks, 1):
@@ -89,9 +101,27 @@ async def run_rag_pipeline(
     else:
         context = "No relevant context found."
 
+    # Feature 1: Inject guidance rules
+    guidance_section = ""
+    if tenant.guidance_rules:
+        guidance_section = f"ADMIN GUIDANCE RULES (always follow these):\n{tenant.guidance_rules}"
+
+    # Feature 2: Support email line
+    support_email_line = ""
+    if tenant.support_email:
+        support_email_line = f" You can also provide this support email: {tenant.support_email}"
+
+    # Feature 2: Contact section
+    contact_section = ""
+    if tenant.support_email:
+        contact_section = f"If the user needs human assistance, direct them to contact: {tenant.support_email}"
+
     system_message = SYSTEM_PROMPT_TEMPLATE.format(
         tenant_name=tenant.name,
         custom_system_prompt=tenant.system_prompt,
+        guidance_section=guidance_section,
+        contact_section=contact_section,
+        support_email_line=support_email_line,
         context=context,
     )
 
@@ -110,11 +140,12 @@ async def run_rag_pipeline(
             "relevance_score": chunk["similarity"],
         }
         for chunk in chunks
-        if chunk["similarity"] > 0.3
+        if chunk["similarity"] > FALLBACK_SIMILARITY_THRESHOLD
     ]
 
     return {
         "response": result["content"],
         "tokens_used": result["tokens_used"],
         "sources": sources,
+        "is_fallback": is_fallback,
     }

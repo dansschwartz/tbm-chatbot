@@ -1,6 +1,8 @@
 import logging
+import re
 import time
 from collections import defaultdict
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -20,6 +22,21 @@ router = APIRouter(prefix="/api", tags=["chat"])
 _session_timestamps: dict[str, list[float]] = defaultdict(list)
 _tenant_timestamps: dict[str, list[float]] = defaultdict(list)
 
+# Feature 10: Auto-tagging keyword map
+TAG_KEYWORDS = {
+    "registration": ["register", "registration", "sign up", "signup", "enroll", "enrollment"],
+    "tryouts": ["tryout", "try out", "tryouts", "id session", "evaluation"],
+    "financial-aid": ["financial aid", "scholarship", "assistance", "afford", "free", "reduced"],
+    "camps": ["camp", "camps", "summer camp", "holiday camp", "spring break"],
+    "programs": ["program", "recreational", "travel", "academy", "select", "tots", "pre-travel"],
+    "schedules": ["schedule", "calendar", "when", "time", "date"],
+    "costs": ["cost", "price", "fee", "tuition", "payment", "how much"],
+    "policies": ["policy", "policies", "rule", "rules", "guideline"],
+    "contact": ["contact", "email", "phone", "reach", "talk to", "speak with"],
+    "futsal": ["futsal", "indoor", "winter league"],
+    "safety": ["safety", "concussion", "emergency", "weather", "lightning"],
+}
+
 
 def _check_rate_limit(key: str, store: dict[str, list[float]], limit: int):
     now = time.time()
@@ -31,6 +48,46 @@ def _check_rate_limit(key: str, store: dict[str, list[float]], limit: int):
             detail="Rate limit exceeded. Please try again later.",
         )
     store[key].append(now)
+
+
+def _auto_tag(text: str) -> list[str]:
+    """Feature 10: Extract topic tags from message text using keyword matching."""
+    lower = text.lower()
+    tags = []
+    for tag, keywords in TAG_KEYWORDS.items():
+        if any(kw in lower for kw in keywords):
+            tags.append(tag)
+    return tags
+
+
+def _is_within_business_hours(business_hours: dict | None) -> bool:
+    """Feature 8: Check if current time is within configured business hours."""
+    if not business_hours:
+        return True
+
+    try:
+        from zoneinfo import ZoneInfo
+    except ImportError:
+        return True
+
+    tz_name = business_hours.get("timezone", "UTC")
+    hours = business_hours.get("hours", {})
+    if not hours:
+        return True
+
+    try:
+        tz = ZoneInfo(tz_name)
+        now = datetime.now(tz)
+        day_abbr = now.strftime("%a").lower()[:3]
+        day_hours = hours.get(day_abbr)
+        if not day_hours or len(day_hours) < 2:
+            return False
+        open_time = datetime.strptime(day_hours[0], "%H:%M").time()
+        close_time = datetime.strptime(day_hours[1], "%H:%M").time()
+        return open_time <= now.time() <= close_time
+    except Exception:
+        logger.warning("Failed to parse business hours, defaulting to open")
+        return True
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -56,9 +113,19 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
     )
     conversation = conv_result.scalar_one_or_none()
     if not conversation:
-        conversation = Conversation(tenant_id=tenant.id, session_id=request.session_id)
+        conversation = Conversation(
+            tenant_id=tenant.id,
+            session_id=request.session_id,
+            # Feature 3: Store pre-chat visitor info
+            visitor_name=request.visitor_name,
+            visitor_email=request.visitor_email,
+        )
         db.add(conversation)
         await db.flush()
+    elif request.visitor_name and not conversation.visitor_name:
+        # Update visitor info if provided later
+        conversation.visitor_name = request.visitor_name
+        conversation.visitor_email = request.visitor_email
 
     # Store user message
     user_msg = Message(
@@ -79,20 +146,38 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
             detail="Failed to generate response. Please try again.",
         )
 
+    response_text = rag_result["response"]
+    is_fallback = rag_result.get("is_fallback", False)
+
+    # Feature 8: Prepend away message if outside business hours
+    if not _is_within_business_hours(tenant.business_hours) and tenant.away_message:
+        response_text = f"**{tenant.away_message}**\n\n{response_text}"
+
     # Store assistant message
     assistant_msg = Message(
         conversation_id=conversation.id,
         role="assistant",
-        content=rag_result["response"],
+        content=response_text,
         tokens_used=rag_result["tokens_used"],
+        is_fallback=is_fallback,
     )
     db.add(assistant_msg)
+    await db.flush()
+
+    # Feature 10: Auto-tag conversation
+    new_tags = _auto_tag(request.message)
+    if new_tags:
+        existing_tags = conversation.tags or []
+        merged = list(set(existing_tags + new_tags))
+        conversation.tags = merged
 
     sources = [SourceReference(**s) for s in rag_result["sources"]]
 
     return ChatResponse(
-        response=rag_result["response"],
+        response=response_text,
         sources=sources,
         session_id=request.session_id,
         conversation_id=conversation.id,
+        message_id=assistant_msg.id,
+        is_fallback=is_fallback,
     )
