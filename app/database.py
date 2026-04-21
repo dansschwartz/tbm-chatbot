@@ -13,6 +13,11 @@ elif db_url.startswith("postgres://"):
 if "sslmode=require" in db_url:
     db_url = db_url.replace("sslmode=require", "ssl=require")
 
+# Remove parameters that asyncpg doesn't support (Neon adds these)
+import re
+db_url = re.sub(r'[&?]channel_binding=[^&]*', '', db_url)
+db_url = re.sub(r'[&?]options=[^&]*', '', db_url)
+
 engine = create_async_engine(db_url, echo=False, pool_size=20, max_overflow=10)
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
