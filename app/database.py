@@ -18,7 +18,15 @@ import re
 db_url = re.sub(r'[&?]channel_binding=[^&]*', '', db_url)
 db_url = re.sub(r'[&?]options=[^&]*', '', db_url)
 
-engine = create_async_engine(db_url, echo=False, pool_size=20, max_overflow=10)
+engine = create_async_engine(
+    db_url,
+    echo=False,
+    pool_size=5,
+    max_overflow=5,
+    pool_timeout=30,
+    pool_recycle=300,       # Recycle connections every 5 minutes
+    pool_pre_ping=True,     # Test connections before using them (fixes Neon idle disconnect)
+)
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
