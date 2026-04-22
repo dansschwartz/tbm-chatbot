@@ -543,3 +543,274 @@ async def list_conversation_notes(
         .order_by(ConversationNote.created_at)
     )
     return result.scalars().all()
+
+
+# ── Feature 41: Conversation Export ─────────────────────────────────────────
+
+@router.get("/export/conversations")
+async def export_conversations(
+    tenant_id: uuid.UUID = Query(...),
+    format: str = Query(default="json", pattern=r"^(json|csv)$"),
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Export all conversations for a tenant as JSON or CSV."""
+    result = await db.execute(
+        select(
+            Conversation.id,
+            Conversation.session_id,
+            Conversation.visitor_name,
+            Conversation.visitor_email,
+            Conversation.started_at,
+            Conversation.tags,
+            Conversation.summary,
+            Conversation.channel,
+            func.count(Message.id).label("message_count"),
+        )
+        .outerjoin(Message, Message.conversation_id == Conversation.id)
+        .where(Conversation.tenant_id == tenant_id)
+        .group_by(Conversation.id)
+        .order_by(Conversation.started_at.desc())
+    )
+    rows = result.all()
+
+    # Get CSAT ratings
+    csat_result = await db.execute(
+        select(CSATRating.conversation_id, CSATRating.rating)
+        .where(CSATRating.tenant_id == tenant_id)
+    )
+    csat_map = {str(r.conversation_id): r.rating for r in csat_result.all()}
+
+    records = []
+    for row in rows:
+        records.append({
+            "conversation_id": str(row.id),
+            "visitor_name": row.visitor_name or "",
+            "visitor_email": row.visitor_email or "",
+            "started_at": row.started_at.isoformat() if row.started_at else "",
+            "message_count": row.message_count,
+            "tags": ",".join(row.tags) if row.tags else "",
+            "summary": row.summary or "",
+            "channel": row.channel or "web",
+            "csat_rating": csat_map.get(str(row.id), ""),
+        })
+
+    if format == "csv":
+        output = io.StringIO()
+        if records:
+            writer = csv.DictWriter(output, fieldnames=records[0].keys())
+            writer.writeheader()
+            writer.writerows(records)
+        content = output.getvalue()
+        return StreamingResponse(
+            iter([content]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=conversations_{tenant_id}.csv"},
+        )
+
+    return records
+
+
+# ── Feature 44: A/B Test Analytics ──────────────────────────────────────────
+
+@router.get("/ab-test-results", response_model=list[ABTestResult])
+async def get_ab_test_results(
+    tenant_id: uuid.UUID = Query(...),
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get A/B test results for greeting variants."""
+    result = await db.execute(
+        select(
+            Conversation.greeting_variant_used,
+            func.count(Conversation.id).label("conv_count"),
+            func.count(Message.id).label("msg_count"),
+        )
+        .outerjoin(Message, Message.conversation_id == Conversation.id)
+        .where(
+            Conversation.tenant_id == tenant_id,
+            Conversation.greeting_variant_used.isnot(None),
+        )
+        .group_by(Conversation.greeting_variant_used)
+    )
+    rows = result.all()
+    return [
+        ABTestResult(
+            variant=row.greeting_variant_used or "default",
+            conversation_count=row.conv_count,
+            avg_messages=round(row.msg_count / row.conv_count, 2) if row.conv_count > 0 else 0,
+        )
+        for row in rows
+    ]
+
+
+# ── Feature 45: Smart Insights ──────────────────────────────────────────────
+
+@router.get("/insights", response_model=list[Insight])
+async def get_insights(
+    tenant_id: uuid.UUID = Query(...),
+    days: int = Query(default=30, ge=1, le=365),
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Auto-generate insights based on analytics data."""
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    insights: list[Insight] = []
+
+    # 1. Unanswered questions analysis
+    fallback_count = (await db.execute(
+        select(func.count(Message.id))
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .where(
+            Conversation.tenant_id == tenant_id,
+            Message.role == "assistant",
+            Message.is_fallback.is_(True),
+            Message.created_at >= since,
+        )
+    )).scalar() or 0
+
+    total_bot_msgs = (await db.execute(
+        select(func.count(Message.id))
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .where(
+            Conversation.tenant_id == tenant_id,
+            Message.role == "assistant",
+            Message.created_at >= since,
+        )
+    )).scalar() or 0
+
+    if total_bot_msgs > 0:
+        fallback_pct = round(fallback_count / total_bot_msgs * 100, 1)
+        if fallback_pct > 20:
+            insights.append(Insight(
+                type="content_gap",
+                title=f"{fallback_pct}% of questions go unanswered",
+                description=f"{fallback_count} out of {total_bot_msgs} bot responses were fallbacks. Review the Unanswered Questions section to identify knowledge base gaps.",
+                priority="high",
+            ))
+        elif fallback_pct > 10:
+            insights.append(Insight(
+                type="content_gap",
+                title=f"{fallback_pct}% fallback rate — room to improve",
+                description="Check unanswered questions and add documents covering those topics.",
+                priority="medium",
+            ))
+
+    # 2. Top unanswered topics
+    fallback_msgs = await db.execute(
+        select(Message.content)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .where(
+            Conversation.tenant_id == tenant_id,
+            Message.role == "user",
+            Message.created_at >= since,
+        )
+        .order_by(Message.created_at.desc())
+        .limit(200)
+    )
+    # Find common question topics from recent messages
+    all_user_msgs = [r[0].lower() for r in fallback_msgs.all()]
+    topic_counter: Counter = Counter()
+    topic_keywords = {
+        "hours": ["hours", "open", "close", "schedule"],
+        "pricing": ["price", "cost", "fee", "how much", "payment"],
+        "location": ["where", "address", "location", "directions", "map"],
+        "contact": ["phone", "email", "contact", "reach"],
+        "registration": ["register", "sign up", "enroll", "join"],
+        "events": ["event", "tournament", "game", "match"],
+    }
+    for msg in all_user_msgs:
+        for topic, keywords in topic_keywords.items():
+            if any(kw in msg for kw in keywords):
+                topic_counter[topic] += 1
+
+    for topic, count in topic_counter.most_common(3):
+        pct = round(count / max(len(all_user_msgs), 1) * 100, 1)
+        if pct >= 10:
+            insights.append(Insight(
+                type="engagement",
+                title=f"{pct}% of questions are about {topic}",
+                description=f"'{topic}' is a hot topic with {count} questions in {days} days. Ensure your knowledge base covers this well.",
+                priority="medium",
+            ))
+
+    # 3. CSAT analysis
+    avg_csat = (await db.execute(
+        select(func.avg(CSATRating.rating)).where(
+            CSATRating.tenant_id == tenant_id,
+            CSATRating.created_at >= since,
+        )
+    )).scalar()
+    if avg_csat is not None:
+        avg_csat = round(float(avg_csat), 2)
+        if avg_csat < 3.0:
+            insights.append(Insight(
+                type="performance",
+                title=f"Low CSAT score: {avg_csat}/5",
+                description="Customer satisfaction is below average. Review negative feedback and unanswered questions to improve response quality.",
+                priority="high",
+            ))
+        elif avg_csat >= 4.5:
+            insights.append(Insight(
+                type="performance",
+                title=f"Excellent CSAT score: {avg_csat}/5",
+                description="Your chatbot is performing well! Keep the knowledge base updated to maintain quality.",
+                priority="low",
+            ))
+
+    # 4. Negative feedback spike
+    neg_feedback = (await db.execute(
+        select(func.count(MessageFeedback.id)).where(
+            MessageFeedback.tenant_id == tenant_id,
+            MessageFeedback.rating == "negative",
+            MessageFeedback.created_at >= since,
+        )
+    )).scalar() or 0
+    pos_feedback = (await db.execute(
+        select(func.count(MessageFeedback.id)).where(
+            MessageFeedback.tenant_id == tenant_id,
+            MessageFeedback.rating == "positive",
+            MessageFeedback.created_at >= since,
+        )
+    )).scalar() or 0
+    total_feedback = neg_feedback + pos_feedback
+    if total_feedback > 5 and neg_feedback > pos_feedback:
+        insights.append(Insight(
+            type="performance",
+            title=f"More thumbs down ({neg_feedback}) than up ({pos_feedback})",
+            description="Users are dissatisfied with responses. Review the most recent negative feedback to identify patterns.",
+            priority="high",
+        ))
+
+    # 5. Document coverage
+    doc_count = (await db.execute(
+        select(func.count(Document.id)).where(Document.tenant_id == tenant_id)
+    )).scalar() or 0
+    if doc_count < 5:
+        insights.append(Insight(
+            type="content_gap",
+            title=f"Only {doc_count} documents in knowledge base",
+            description="A small knowledge base leads to more unanswered questions. Add more content — FAQs, policies, program details.",
+            priority="high" if doc_count < 3 else "medium",
+        ))
+
+    # 6. Response time
+    avg_rt = (await db.execute(
+        select(func.avg(Message.response_time_ms))
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .where(
+            Conversation.tenant_id == tenant_id,
+            Message.role == "assistant",
+            Message.response_time_ms.isnot(None),
+            Message.created_at >= since,
+        )
+    )).scalar()
+    if avg_rt is not None and float(avg_rt) > 5000:
+        insights.append(Insight(
+            type="performance",
+            title=f"Slow average response time: {round(float(avg_rt))}ms",
+            description="Responses are taking over 5 seconds. This may be due to large documents or high load.",
+            priority="medium",
+        ))
+
+    return insights

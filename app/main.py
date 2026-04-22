@@ -19,13 +19,13 @@ logger.info(f"DATABASE_URL (masked): {masked_url}")
 
 from app.database import engine, db_url as resolved_db_url
 from app.models import Base
-from app.routers import admin, articles, chat, contact, csat, documents, feedback, tenants
+from app.routers import admin, articles, chat, contact, csat, documents, feedback, tenants, whatsapp
 from app.services.openai_client import close_client
 
 masked_resolved = re.sub(r'://([^:]+):([^@]+)@', r'://\1:***@', resolved_db_url)
 logger.info(f"Resolved DB URL (masked): {masked_resolved}")
 
-APP_VERSION = "2.0.0"
+APP_VERSION = "3.0.0"
 _startup_time = None
 
 app = FastAPI(
@@ -52,12 +52,16 @@ app.include_router(contact.router)
 app.include_router(feedback.router)
 app.include_router(csat.router)
 app.include_router(articles.router)
+app.include_router(whatsapp.router)
 
 # Serve widget static files
 app.mount("/widget", StaticFiles(directory="widget"), name="widget")
 
 # Serve demo page
 app.mount("/demo", StaticFiles(directory="demo", html=True), name="demo")
+
+# Feature 37: Serve admin dashboard
+app.mount("/admin", StaticFiles(directory="admin", html=True), name="admin")
 
 
 @app.on_event("startup")
@@ -69,6 +73,7 @@ async def startup():
     try:
         async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables ready")
     except Exception as e:

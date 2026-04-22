@@ -64,16 +64,16 @@ class Tenant(Base):
     banned_words: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)
 
     # Feature 39: WhatsApp integration (Twilio)
-    whatsapp_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    whatsapp_enabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
     twilio_account_sid: Mapped[str | None] = mapped_column(String(255), nullable=True)
     twilio_auth_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
     twilio_whatsapp_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Feature 40: Email notifications
-    email_notifications_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    email_notifications_enabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
 
     # Feature 44: A/B Testing for welcome messages
-    ab_test_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    ab_test_enabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
 
     documents: Mapped[list["Document"]] = relationship(back_populates="tenant", cascade="all, delete-orphan")
     conversations: Mapped[list["Conversation"]] = relationship(back_populates="tenant", cascade="all, delete-orphan")
@@ -139,7 +139,7 @@ class Conversation(Base):
     summary: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Feature 39: Channel tracking (web, whatsapp)
-    channel: Mapped[str] = mapped_column(String(20), nullable=False, default="web")
+    channel: Mapped[str | None] = mapped_column(String(20), nullable=True, default="web")
 
     # Feature 44: A/B testing — which greeting variant was shown
     greeting_variant_used: Mapped[str | None] = mapped_column(String(500), nullable=True)

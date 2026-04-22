@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import ContactRequest, Tenant
 from app.schemas import ContactCreate, ContactResponse
+from app.services.email import send_contact_notification
 from app.services.webhooks import fire_webhook
 
 logger = logging.getLogger(__name__)
@@ -45,5 +46,19 @@ async def create_contact_request(
         "message": data.message,
         "conversation_id": str(data.conversation_id) if data.conversation_id else None,
     })
+
+    # Feature 40: Email notification
+    if tenant.email_notifications_enabled and tenant.support_email:
+        try:
+            await send_contact_notification(
+                tenant_name=tenant.name,
+                support_email=tenant.support_email,
+                visitor_name=data.visitor_name,
+                visitor_email=data.visitor_email,
+                message=data.message,
+                conversation_id=str(data.conversation_id) if data.conversation_id else None,
+            )
+        except Exception:
+            logger.exception("Failed to send contact notification email")
 
     return contact

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 import re
 import time
 from collections import defaultdict
@@ -248,6 +249,10 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
             visitor_name=request.visitor_name,
             visitor_email=request.visitor_email,
         )
+        # Feature 44: A/B testing — randomly assign greeting variant
+        if tenant.ab_test_enabled and tenant.greeting_variants:
+            variant = random.choice(tenant.greeting_variants)
+            conversation.greeting_variant_used = variant
         db.add(conversation)
         await db.flush()
     elif request.visitor_name and not conversation.visitor_name:

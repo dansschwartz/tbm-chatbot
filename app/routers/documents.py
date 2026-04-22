@@ -19,7 +19,9 @@ from app.schemas import (
     DocumentCreate,
     DocumentResponse,
 )
+from app.schemas import CrawlRequest
 from app.services.chunking import chunk_text
+from app.services.crawler import crawl_url
 from app.services.embeddings import embed_chunks
 
 
@@ -273,6 +275,58 @@ async def reingest_document(
     await db.refresh(document)
 
     background_tasks.add_task(_reingest_document, document.id, tenant_id, data.content)
+
+    return document
+
+
+# ── Feature 42: Document Auto-Crawler ───────────────────────────────────────
+
+@router.post("/crawl", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+async def crawl_document(
+    tenant_id: uuid.UUID,
+    data: CrawlRequest,
+    background_tasks: BackgroundTasks,
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Crawl a URL and auto-create a document from the extracted content."""
+    tenant_result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant_result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+
+    try:
+        crawled = await crawl_url(data.url)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to crawl URL: {e}")
+
+    title = data.title or crawled["title"]
+    content = crawled["content"]
+    content_hash = hashlib.sha256(content.encode()).hexdigest()
+
+    # Check for duplicate
+    existing = await db.execute(
+        select(Document).where(
+            Document.tenant_id == tenant_id,
+            Document.content_hash == content_hash,
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Document with identical content already exists")
+
+    document = Document(
+        tenant_id=tenant_id,
+        title=title,
+        source_url=data.url,
+        content_hash=content_hash,
+        status="processing",
+        content_type="text",
+        category=data.category,
+    )
+    db.add(document)
+    await db.flush()
+    await db.refresh(document)
+
+    background_tasks.add_task(_process_document, document.id, tenant_id, content)
 
     return document
 
