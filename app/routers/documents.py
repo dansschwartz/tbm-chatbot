@@ -192,7 +192,7 @@ async def create_document(
     await db.flush()
     await db.refresh(document)
 
-    background_tasks.add_task(_process_document, document.id, tenant_id, content)
+    await _process_document(document.id, tenant_id, content)
 
     return document
 
@@ -239,7 +239,7 @@ async def bulk_create_documents(
             db.add(document)
             await db.flush()
 
-            background_tasks.add_task(_process_document, document.id, tenant_id, item.content)
+            await _process_document(document.id, tenant_id, item.content)
             succeeded += 1
 
         except Exception:
@@ -326,7 +326,7 @@ async def crawl_document(
     await db.flush()
     await db.refresh(document)
 
-    background_tasks.add_task(_process_document, document.id, tenant_id, content)
+    await _process_document(document.id, tenant_id, content)
 
     return document
 
