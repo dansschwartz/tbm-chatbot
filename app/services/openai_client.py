@@ -42,11 +42,18 @@ async def create_embedding(text: str) -> list[float]:
 
 async def create_embeddings_batch(texts: list[str]) -> list[list[float]]:
     client = await get_client()
-    resp = await client.post(
-        f"{OPENAI_BASE}/embeddings",
-        headers=_get_headers(),
-        json={"input": texts, "model": settings.embedding_model},
-    )
+    for attempt in range(5):
+        resp = await client.post(
+            f"{OPENAI_BASE}/embeddings",
+            headers=_get_headers(),
+            json={"input": texts, "model": settings.embedding_model},
+        )
+        if resp.status_code == 429:
+            wait = min(2 ** attempt * 5, 60)  # 5s, 10s, 20s, 40s, 60s
+            import asyncio
+            await asyncio.sleep(wait)
+            continue
+        break
     resp.raise_for_status()
     data = resp.json()["data"]
     data.sort(key=lambda x: x["index"])
