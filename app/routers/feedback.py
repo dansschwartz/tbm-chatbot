@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import Conversation, Message, MessageFeedback, Tenant
 from app.schemas import FeedbackCreate, FeedbackResponse
+from app.services.email import send_negative_feedback_alert
 from app.services.webhooks import fire_webhook
 
 logger = logging.getLogger(__name__)
@@ -60,5 +61,26 @@ async def submit_feedback(
                 "conversation_id": str(conversation.id),
                 "message_content": message.content[:500],
             })
+            # Feature 40: Email alert on negative feedback
+            if tenant.email_notifications_enabled and tenant.support_email:
+                # Get the user question that preceded this bot message
+                user_q_result = await db.execute(
+                    select(Message.content).where(
+                        Message.conversation_id == conversation.id,
+                        Message.role == "user",
+                        Message.created_at < message.created_at,
+                    ).order_by(Message.created_at.desc()).limit(1)
+                )
+                user_question = user_q_result.scalar_one_or_none() or "(unknown)"
+                try:
+                    await send_negative_feedback_alert(
+                        tenant_name=tenant.name,
+                        support_email=tenant.support_email,
+                        user_question=user_question,
+                        bot_response=message.content[:500],
+                        conversation_id=str(conversation.id),
+                    )
+                except Exception:
+                    logger.exception("Failed to send negative feedback email alert")
 
     return feedback
