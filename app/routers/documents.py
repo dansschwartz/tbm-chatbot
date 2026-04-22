@@ -220,8 +220,12 @@ async def create_document(
         await db.refresh(document)
     except Exception as e:
         logger.exception("Failed to process document %s: %s", document.id, str(e))
-        document.status = "error"
-        await db.commit()
+        try:
+            document.status = "error"
+            await db.commit()
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail=f"Document processing failed: {str(e)[:200]}")
 
     return document
 
