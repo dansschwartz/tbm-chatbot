@@ -5,8 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Message, MessageFeedback, Conversation
+from app.models import Conversation, Message, MessageFeedback, Tenant
 from app.schemas import FeedbackCreate, FeedbackResponse
+from app.services.webhooks import fire_webhook
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["feedback"])
@@ -47,4 +48,17 @@ async def submit_feedback(
     db.add(feedback)
     await db.flush()
     await db.refresh(feedback)
+
+    # Feature 11: Webhook on negative feedback
+    if data.rating == "negative":
+        tenant_result = await db.execute(select(Tenant).where(Tenant.id == conversation.tenant_id))
+        tenant = tenant_result.scalar_one_or_none()
+        if tenant:
+            await fire_webhook(tenant, "feedback.negative", {
+                "feedback_id": str(feedback.id),
+                "message_id": str(data.message_id),
+                "conversation_id": str(conversation.id),
+                "message_content": message.content[:500],
+            })
+
     return feedback

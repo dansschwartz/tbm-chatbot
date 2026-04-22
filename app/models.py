@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -36,6 +36,17 @@ class Tenant(Base):
     business_hours: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     away_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
+    # Feature 11: Webhook notifications
+    webhook_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    webhook_events: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)
+
+    # Feature 12: CSAT survey
+    csat_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    csat_trigger_after: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+
+    # Feature 22: Per-tenant daily message quota
+    daily_message_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     documents: Mapped[list["Document"]] = relationship(back_populates="tenant", cascade="all, delete-orphan")
     conversations: Mapped[list["Conversation"]] = relationship(back_populates="tenant", cascade="all, delete-orphan")
     contact_requests: Mapped[list["ContactRequest"]] = relationship(back_populates="tenant", cascade="all, delete-orphan")
@@ -51,6 +62,8 @@ class Document(Base):
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="processing")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # Feature 18: Content freshness
+    last_ingested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     tenant: Mapped["Tenant"] = relationship(back_populates="documents")
     chunks: Mapped[list["DocumentChunk"]] = relationship(back_populates="document", cascade="all, delete-orphan")
@@ -139,3 +152,15 @@ class MessageFeedback(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     message: Mapped["Message"] = relationship(back_populates="feedback")
+
+
+# Feature 12: CSAT ratings table
+class CSATRating(Base):
+    __tablename__ = "csat_ratings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False, index=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 
 from pydantic import BaseModel, Field
 
@@ -41,6 +41,14 @@ class TenantUpdate(BaseModel):
     # Feature 8: Business hours & away mode
     business_hours: dict | None = None
     away_message: str | None = None
+    # Feature 11: Webhooks
+    webhook_url: str | None = None
+    webhook_events: list[str] | None = None
+    # Feature 12: CSAT
+    csat_enabled: bool | None = None
+    csat_trigger_after: int | None = None
+    # Feature 22: Daily message quota
+    daily_message_limit: int | None = None
 
 
 class TenantResponse(BaseModel):
@@ -57,6 +65,11 @@ class TenantResponse(BaseModel):
     quick_replies: list | None = None
     business_hours: dict | None = None
     away_message: str | None = None
+    webhook_url: str | None = None
+    webhook_events: list | None = None
+    csat_enabled: bool = False
+    csat_trigger_after: int = 5
+    daily_message_limit: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -69,6 +82,8 @@ class TenantPublicResponse(BaseModel):
     support_email: str | None = None
     business_hours: dict | None = None
     away_message: str | None = None
+    csat_enabled: bool = False
+    csat_trigger_after: int = 5
 
     model_config = {"from_attributes": True}
 
@@ -88,8 +103,27 @@ class DocumentResponse(BaseModel):
     source_url: str | None
     status: str
     created_at: datetime
+    last_ingested_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+# --- Bulk document ingestion (Feature 17) ---
+
+class BulkDocumentItem(BaseModel):
+    title: str = Field(..., min_length=1, max_length=500)
+    content: str = Field(..., min_length=1)
+    source_url: str | None = None
+
+
+class BulkDocumentRequest(BaseModel):
+    documents: list[BulkDocumentItem] = Field(..., min_length=1)
+
+
+class BulkDocumentResponse(BaseModel):
+    total: int
+    succeeded: int
+    failed: int
 
 
 # --- Chat schemas ---
@@ -117,6 +151,7 @@ class ChatResponse(BaseModel):
     conversation_id: uuid.UUID
     message_id: uuid.UUID | None = None
     is_fallback: bool = False
+    suggestions: list[str] = []
 
 
 # --- Contact schemas (Feature 2) ---
@@ -204,3 +239,60 @@ class UnansweredMessage(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# --- CSAT schemas (Feature 12) ---
+
+class CSATCreate(BaseModel):
+    conversation_id: uuid.UUID
+    rating: int = Field(..., ge=1, le=5)
+    comment: str | None = None
+
+
+class CSATResponse(BaseModel):
+    id: uuid.UUID
+    conversation_id: uuid.UUID
+    tenant_id: uuid.UUID
+    rating: int
+    comment: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Analytics summary (Feature 20) ---
+
+class MessagesPerDay(BaseModel):
+    date: str
+    count: int
+
+
+class TagCount(BaseModel):
+    tag: str
+    count: int
+
+
+class AnalyticsSummary(BaseModel):
+    total_conversations: int
+    total_messages: int
+    avg_messages_per_conversation: float
+    total_contact_requests: int
+    resolution_rate: float  # percentage of non-fallback responses
+    avg_csat_score: float | None
+    top_tags: list[TagCount]
+    messages_per_day: list[MessagesPerDay]
+    busiest_hours: list[int]
+    daily_message_usage: int | None = None  # Feature 22
+
+
+# --- Conversation search (Feature 21) ---
+
+class ConversationSearchResult(BaseModel):
+    conversation_id: uuid.UUID
+    session_id: str
+    visitor_name: str | None = None
+    visitor_email: str | None = None
+    message_id: uuid.UUID
+    role: str
+    snippet: str
+    created_at: datetime

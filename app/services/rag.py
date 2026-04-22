@@ -1,3 +1,4 @@
+import re
 import uuid
 import logging
 
@@ -27,8 +28,22 @@ IMPORTANT INSTRUCTIONS:
 - If sources are available, naturally reference them in your response.
 - If you cannot answer a question or the user asks to speak with someone, tell them they can use the contact form below the chat.{support_email_line}
 
+After answering, suggest 2-3 brief follow-up questions the user might want to ask based on the context, formatted exactly as:
+SUGGESTIONS: [question 1 | question 2 | question 3]
+
 CONTEXT:
 {context}"""
+
+
+def _parse_suggestions(text: str) -> tuple[str, list[str]]:
+    """Extract SUGGESTIONS line from response and return cleaned response + suggestions list."""
+    match = re.search(r'SUGGESTIONS:\s*\[([^\]]+)\]\s*$', text, re.MULTILINE)
+    if not match:
+        return text.strip(), []
+    suggestions_str = match.group(1)
+    suggestions = [s.strip() for s in suggestions_str.split("|") if s.strip()]
+    cleaned = text[:match.start()].strip()
+    return cleaned, suggestions
 
 # Similarity threshold below which we consider the response a fallback
 FALLBACK_SIMILARITY_THRESHOLD = 0.3
@@ -132,6 +147,9 @@ async def run_rag_pipeline(
 
     result = await chat_completion(messages)
 
+    # Feature 13: Parse suggestions from LLM response
+    response_text, suggestions = _parse_suggestions(result["content"])
+
     sources = [
         {
             "document_title": chunk["document_title"],
@@ -144,8 +162,9 @@ async def run_rag_pipeline(
     ]
 
     return {
-        "response": result["content"],
+        "response": response_text,
         "tokens_used": result["tokens_used"],
         "sources": sources,
         "is_fallback": is_fallback,
+        "suggestions": suggestions,
     }

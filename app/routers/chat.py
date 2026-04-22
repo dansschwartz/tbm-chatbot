@@ -2,10 +2,10 @@ import logging
 import re
 import time
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -14,6 +14,7 @@ from app.middleware.auth import get_tenant_by_slug
 from app.models import Conversation, Message, Tenant
 from app.schemas import ChatRequest, ChatResponse, SourceReference
 from app.services.rag import run_rag_pipeline
+from app.services.webhooks import fire_webhook
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -21,6 +22,9 @@ router = APIRouter(prefix="/api", tags=["chat"])
 # Simple in-memory rate limiter
 _session_timestamps: dict[str, list[float]] = defaultdict(list)
 _tenant_timestamps: dict[str, list[float]] = defaultdict(list)
+
+# Feature 22: Daily message counter (resets at midnight UTC)
+_daily_counts: dict[str, dict] = {}  # tenant_id -> {"date": "YYYY-MM-DD", "count": int}
 
 # Feature 10: Auto-tagging keyword map
 TAG_KEYWORDS = {
@@ -48,6 +52,41 @@ def _check_rate_limit(key: str, store: dict[str, list[float]], limit: int):
             detail="Rate limit exceeded. Please try again later.",
         )
     store[key].append(now)
+
+
+def _check_daily_quota(tenant: Tenant):
+    """Feature 22: Check per-tenant daily message quota."""
+    if not tenant.daily_message_limit:
+        return
+    tenant_key = str(tenant.id)
+    today = date.today().isoformat()
+    entry = _daily_counts.get(tenant_key)
+    if not entry or entry["date"] != today:
+        _daily_counts[tenant_key] = {"date": today, "count": 0}
+        entry = _daily_counts[tenant_key]
+    if entry["count"] >= tenant.daily_message_limit:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Daily message limit ({tenant.daily_message_limit}) exceeded. Resets at midnight UTC.",
+        )
+
+
+def _increment_daily_count(tenant_id: str):
+    today = date.today().isoformat()
+    entry = _daily_counts.get(tenant_id)
+    if not entry or entry["date"] != today:
+        _daily_counts[tenant_id] = {"date": today, "count": 1}
+    else:
+        entry["count"] += 1
+
+
+def get_daily_count(tenant_id: str) -> int:
+    """Get current daily message count for a tenant."""
+    today = date.today().isoformat()
+    entry = _daily_counts.get(tenant_id)
+    if not entry or entry["date"] != today:
+        return 0
+    return entry["count"]
 
 
 def _auto_tag(text: str) -> list[str]:
@@ -104,6 +143,9 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
     _check_rate_limit(request.session_id, _session_timestamps, settings.rate_limit_per_session)
     _check_rate_limit(str(tenant.id), _tenant_timestamps, settings.rate_limit_per_tenant)
 
+    # Feature 22: Daily message quota
+    _check_daily_quota(tenant)
+
     # Get or create conversation
     conv_result = await db.execute(
         select(Conversation).where(
@@ -112,6 +154,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
         )
     )
     conversation = conv_result.scalar_one_or_none()
+    is_new_conversation = conversation is None
     if not conversation:
         conversation = Conversation(
             tenant_id=tenant.id,
@@ -148,6 +191,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
 
     response_text = rag_result["response"]
     is_fallback = rag_result.get("is_fallback", False)
+    suggestions = rag_result.get("suggestions", [])
 
     # Feature 8: Prepend away message if outside business hours
     if not _is_within_business_hours(tenant.business_hours) and tenant.away_message:
@@ -171,7 +215,25 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
         merged = list(set(existing_tags + new_tags))
         conversation.tags = merged
 
+    # Feature 22: Increment daily count
+    _increment_daily_count(str(tenant.id))
+
     sources = [SourceReference(**s) for s in rag_result["sources"]]
+
+    # Feature 11: Fire webhooks
+    if is_new_conversation:
+        await fire_webhook(tenant, "conversation.started", {
+            "conversation_id": str(conversation.id),
+            "session_id": request.session_id,
+            "visitor_name": request.visitor_name,
+            "visitor_email": request.visitor_email,
+        })
+    if is_fallback:
+        await fire_webhook(tenant, "fallback.detected", {
+            "conversation_id": str(conversation.id),
+            "message": request.message,
+            "response": response_text,
+        })
 
     return ChatResponse(
         response=response_text,
@@ -180,4 +242,5 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
         conversation_id=conversation.id,
         message_id=assistant_msg.id,
         is_fallback=is_fallback,
+        suggestions=suggestions,
     )

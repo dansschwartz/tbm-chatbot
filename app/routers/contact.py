@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import ContactRequest, Tenant
 from app.schemas import ContactCreate, ContactResponse
+from app.services.webhooks import fire_webhook
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["contact"])
@@ -35,4 +36,14 @@ async def create_contact_request(
     db.add(contact)
     await db.flush()
     await db.refresh(contact)
+
+    # Feature 11: Webhook notification
+    await fire_webhook(tenant, "contact_request.created", {
+        "contact_id": str(contact.id),
+        "visitor_name": data.visitor_name,
+        "visitor_email": data.visitor_email,
+        "message": data.message,
+        "conversation_id": str(data.conversation_id) if data.conversation_id else None,
+    })
+
     return contact
