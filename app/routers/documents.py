@@ -237,7 +237,7 @@ async def bulk_create_documents(
                 status="processing",
             )
             db.add(document)
-            await db.flush()
+            await db.commit()
 
             await _process_document(document.id, tenant_id, item.content)
             succeeded += 1
