@@ -192,40 +192,9 @@ async def create_document(
     await db.commit()
     await db.refresh(document)
 
-    # Process document inline (chunk + embed)
-    try:
-        from app.services.chunking import chunk_text
-        from app.services.embeddings import embed_chunks
-        from app.models import DocumentChunk
-        from datetime import datetime, timezone as tz
-
-        chunks = chunk_text(content)
-        if chunks:
-            embeddings = await embed_chunks(chunks)
-            for i, (chunk_content, embedding) in enumerate(zip(chunks, embeddings)):
-                chunk = DocumentChunk(
-                    document_id=document.id,
-                    tenant_id=tenant_id,
-                    content=chunk_content,
-                    embedding=embedding,
-                    chunk_metadata={"chunk_index": i, "total_chunks": len(chunks)},
-                    chunk_index=i,
-                )
-                db.add(chunk)
-            document.status = "ready"
-            document.last_ingested_at = datetime.now(tz.utc)
-        else:
-            document.status = "error"
-        await db.commit()
-        await db.refresh(document)
-    except Exception as e:
-        logger.exception("Failed to process document %s: %s", document.id, str(e))
-        try:
-            document.status = "error"
-            await db.commit()
-        except Exception:
-            pass
-        raise HTTPException(status_code=500, detail=f"Document processing failed: {str(e)[:200]}")
+    # Process in background - commit first so background task can find the document
+    import asyncio
+    asyncio.ensure_future(_process_document(document.id, tenant_id, content))
 
     return document
 
