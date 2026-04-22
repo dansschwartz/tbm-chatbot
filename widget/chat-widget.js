@@ -97,6 +97,13 @@
   let teaserDismissed = false;
   let teaserTimeout = null;
   let typingTimeout = null;
+  // Wave 3 state
+  let customCss = null;
+  let defaultLanguage = "en";
+  let supportedLanguages = ["en"];
+  let greetingVariants = [];
+  let escalationTriggers = [];
+  let articlesPanelOpen = false;
 
   // --- Feature 14: Markdown-to-HTML renderer ---
   function renderMarkdown(text) {
@@ -175,6 +182,13 @@
         csatEnabled = data.csat_enabled || false;
         csatTriggerAfter = data.csat_trigger_after || 5;
 
+        // Wave 3 config
+        customCss = data.custom_css || null;
+        defaultLanguage = data.default_language || "en";
+        supportedLanguages = data.supported_languages || ["en"];
+        greetingVariants = data.greeting_variants || [];
+        escalationTriggers = data.escalation_triggers || [];
+
         // Defaults for quick replies
         if (!quickReplies || quickReplies.length === 0) {
           quickReplies = ["How do I register?", "What programs do you offer?", "Do you offer financial aid?"];
@@ -184,6 +198,10 @@
         showQuickReplies();
         showAwayIndicator();
         startTeaserTimer();
+        injectCustomCss();
+        applyGreetingVariant();
+        applyWidgetPosition();
+        applyLanguage();
       }
     } catch (e) {
       console.warn("TBM Chat Widget: Could not load config", e);
@@ -442,6 +460,138 @@
     persistState();
   }
 
+  // --- Feature 25: Custom CSS injection ---
+  function injectCustomCss() {
+    if (!customCss) return;
+    var style = document.createElement("style");
+    style.setAttribute("data-tbm-custom", "true");
+    style.textContent = customCss;
+    document.head.appendChild(style);
+  }
+
+  // --- Feature 27: Greeting variants ---
+  function applyGreetingVariant() {
+    if (!greetingVariants || greetingVariants.length === 0) return;
+    if (savedMessages.length > 0) return; // Don't change if restoring
+    var variant = greetingVariants[Math.floor(Math.random() * greetingVariants.length)];
+    var welcomeMsg = document.querySelector(".tbm-chat-message-assistant");
+    if (welcomeMsg) {
+      welcomeMsg.innerHTML = renderMarkdown(variant);
+    }
+  }
+
+  // --- Feature 33: Widget position customization ---
+  function applyWidgetPosition() {
+    var wp = config.widget_position;
+    if (!wp) return;
+    var widget = document.querySelector(".tbm-chat-widget");
+    if (!widget) return;
+    var side = wp.side || "right";
+    var bottomOffset = (wp.bottom_offset != null ? wp.bottom_offset : 20) + "px";
+    var sideOffset = (wp.side_offset != null ? wp.side_offset : 20) + "px";
+
+    widget.style.position = "fixed";
+    widget.style.bottom = bottomOffset;
+    if (side === "left") {
+      widget.style.left = sideOffset;
+      widget.style.right = "auto";
+      widget.classList.add("tbm-position-left");
+    } else {
+      widget.style.right = sideOffset;
+      widget.style.left = "auto";
+      widget.classList.remove("tbm-position-left");
+    }
+  }
+
+  // --- Feature 26: Multi-language support ---
+  function applyLanguage() {
+    var widget = document.querySelector(".tbm-chat-widget");
+    if (widget && defaultLanguage) {
+      widget.setAttribute("lang", defaultLanguage);
+    }
+    // Update placeholder based on language
+    var input = document.querySelector(".tbm-chat-input");
+    if (input && defaultLanguage !== "en") {
+      var placeholders = {
+        es: "Escribe tu mensaje...",
+        fr: "Tapez votre message...",
+        de: "Nachricht eingeben...",
+        pt: "Digite sua mensagem...",
+        it: "Scrivi il tuo messaggio...",
+        zh: "输入您的消息...",
+        ja: "メッセージを入力...",
+        ko: "메시지를 입력하세요...",
+        ar: "...اكتب رسالتك",
+      };
+      if (placeholders[defaultLanguage]) {
+        input.placeholder = placeholders[defaultLanguage];
+      }
+    }
+  }
+
+  // --- Feature 23: Knowledge Base Article Browser ---
+  function toggleArticlesPanel() {
+    var panel = document.querySelector(".tbm-articles-panel");
+    var chatMain = document.querySelector(".tbm-chat-main");
+    if (!panel) return;
+    articlesPanelOpen = !articlesPanelOpen;
+    panel.style.display = articlesPanelOpen ? "flex" : "none";
+    if (chatMain) chatMain.style.display = articlesPanelOpen ? "none" : "flex";
+    if (articlesPanelOpen) loadArticles();
+  }
+
+  async function loadArticles(searchQuery) {
+    var listEl = document.querySelector(".tbm-articles-list");
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="tbm-articles-loading">Loading articles...</div>';
+    try {
+      var url = apiBase + "/api/tenants/" + orgId + "/articles";
+      if (searchQuery) url += "?search=" + encodeURIComponent(searchQuery);
+      var resp = await fetch(url);
+      if (!resp.ok) throw new Error("Failed to load");
+      var articles = await resp.json();
+      if (articles.length === 0) {
+        listEl.innerHTML = '<div class="tbm-articles-empty">No articles found.</div>';
+        return;
+      }
+      listEl.innerHTML = "";
+      // Group by category
+      var categories = {};
+      articles.forEach(function (a) {
+        var cat = a.category || "General";
+        if (!categories[cat]) categories[cat] = [];
+        categories[cat].push(a);
+      });
+      Object.keys(categories).sort().forEach(function (cat) {
+        var catHeader = document.createElement("div");
+        catHeader.className = "tbm-articles-category";
+        catHeader.textContent = cat;
+        listEl.appendChild(catHeader);
+        categories[cat].forEach(function (article) {
+          var item = document.createElement("div");
+          item.className = "tbm-articles-item";
+          item.innerHTML =
+            '<div class="tbm-articles-title">' + escapeHtml(article.title) + '</div>' +
+            '<div class="tbm-articles-snippet">' + escapeHtml(article.snippet.substring(0, 120)) + '</div>';
+          item.addEventListener("click", function () {
+            if (article.source_url) {
+              window.open(article.source_url, "_blank", "noopener");
+            } else {
+              // Insert as chat query
+              toggleArticlesPanel();
+              var inputEl = document.querySelector(".tbm-chat-input");
+              if (inputEl) inputEl.value = "Tell me about: " + article.title;
+              sendMessage();
+            }
+          });
+          listEl.appendChild(item);
+        });
+      });
+    } catch (e) {
+      listEl.innerHTML = '<div class="tbm-articles-empty">Could not load articles.</div>';
+    }
+  }
+
   // --- Widget DOM ---
   function createWidget() {
     var container = document.createElement("div");
@@ -461,6 +611,7 @@
             '<span class="tbm-chat-header-name">Chat</span>' +
           '</div>' +
           '<div class="tbm-chat-header-actions">' +
+            '<button class="tbm-chat-articles-btn" aria-label="Browse articles" title="Help articles">&#128218;</button>' +
             '<button class="tbm-chat-export" aria-label="Download transcript" title="Download transcript">' +
               '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
             '</button>' +
@@ -468,6 +619,13 @@
           '</div>' +
         '</div>' +
         '<div class="tbm-away-indicator" style="display:none"></div>' +
+        '<div class="tbm-articles-panel" style="display:none">' +
+          '<div class="tbm-articles-header">' +
+            '<input type="text" class="tbm-articles-search" placeholder="Search articles..." maxlength="200">' +
+            '<button class="tbm-articles-back" aria-label="Back to chat">&larr; Chat</button>' +
+          '</div>' +
+          '<div class="tbm-articles-list"></div>' +
+        '</div>' +
         '<div class="tbm-prechat-form" style="display:none">' +
           '<div class="tbm-prechat-title">Before we start, tell us about yourself</div>' +
           '<input type="text" class="tbm-prechat-name" placeholder="Your name" maxlength="255">' +
@@ -545,6 +703,21 @@
 
     // Feature 16: Export button
     exportBtn.addEventListener("click", exportTranscript);
+
+    // Feature 23: Articles panel
+    var articlesBtn = container.querySelector(".tbm-chat-articles-btn");
+    if (articlesBtn) articlesBtn.addEventListener("click", toggleArticlesPanel);
+    var articlesBack = container.querySelector(".tbm-articles-back");
+    if (articlesBack) articlesBack.addEventListener("click", toggleArticlesPanel);
+    var articlesSearch = container.querySelector(".tbm-articles-search");
+    if (articlesSearch) {
+      var searchTimeout = null;
+      articlesSearch.addEventListener("input", function () {
+        clearTimeout(searchTimeout);
+        var q = articlesSearch.value.trim();
+        searchTimeout = setTimeout(function () { loadArticles(q || undefined); }, 300);
+      });
+    }
 
     input.addEventListener("keydown", function (e) {
       if (e.key === "Enter" && !e.shiftKey) {

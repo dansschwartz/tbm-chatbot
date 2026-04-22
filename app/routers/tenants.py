@@ -99,6 +99,23 @@ async def delete_tenant(
     await db.delete(tenant)
 
 
+# Feature 35: API key rotation
+@router.post("/{tenant_id}/rotate-key", response_model=TenantResponse)
+async def rotate_api_key(
+    tenant_id: uuid.UUID,
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+    tenant.api_key = _generate_api_key()
+    await db.flush()
+    await db.refresh(tenant)
+    return tenant
+
+
 # Public endpoint for widget config (no admin key needed)
 @router.get("/public/{slug}", response_model=TenantPublicResponse)
 async def get_tenant_public(slug: str, db: AsyncSession = Depends(get_db)):

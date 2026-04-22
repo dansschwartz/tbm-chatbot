@@ -6,6 +6,12 @@ from pydantic import BaseModel, Field
 
 # --- Tenant schemas ---
 
+class WidgetPosition(BaseModel):
+    side: str = "right"  # "right" or "left"
+    bottom_offset: int = 20
+    side_offset: int = 20
+
+
 class WidgetConfig(BaseModel):
     primary_color: str = "#2563eb"
     text_color: str = "#ffffff"
@@ -18,6 +24,8 @@ class WidgetConfig(BaseModel):
     prechat_fields: list[str] = []
     # Feature 6: Launcher teaser
     launcher_teaser: str | None = None
+    # Feature 33: Widget position customization
+    widget_position: WidgetPosition = WidgetPosition()
 
 
 class TenantCreate(BaseModel):
@@ -49,6 +57,17 @@ class TenantUpdate(BaseModel):
     csat_trigger_after: int | None = None
     # Feature 22: Daily message quota
     daily_message_limit: int | None = None
+    # Feature 25: Custom CSS
+    custom_css: str | None = None
+    # Feature 26: Multi-language
+    default_language: str | None = None
+    supported_languages: list[str] | None = None
+    # Feature 27: Greeting variants
+    greeting_variants: list[str] | None = None
+    # Feature 28: Escalation triggers
+    escalation_triggers: list[str] | None = None
+    # Feature 34: Banned words
+    banned_words: list[str] | None = None
 
 
 class TenantResponse(BaseModel):
@@ -70,6 +89,12 @@ class TenantResponse(BaseModel):
     csat_enabled: bool = False
     csat_trigger_after: int = 5
     daily_message_limit: int | None = None
+    custom_css: str | None = None
+    default_language: str = "en"
+    supported_languages: list | None = None
+    greeting_variants: list | None = None
+    escalation_triggers: list | None = None
+    banned_words: list | None = None
 
     model_config = {"from_attributes": True}
 
@@ -84,6 +109,15 @@ class TenantPublicResponse(BaseModel):
     away_message: str | None = None
     csat_enabled: bool = False
     csat_trigger_after: int = 5
+    # Feature 25: Custom CSS
+    custom_css: str | None = None
+    # Feature 26: Multi-language
+    default_language: str = "en"
+    supported_languages: list | None = None
+    # Feature 27: Greeting variants
+    greeting_variants: list | None = None
+    # Feature 28: Escalation triggers
+    escalation_triggers: list | None = None
 
     model_config = {"from_attributes": True}
 
@@ -94,6 +128,10 @@ class DocumentCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
     content: str = Field(..., min_length=1)
     source_url: str | None = None
+    # Feature 23: Category for article browser
+    category: str | None = None
+    # Feature 30: PDF support — "text" or "pdf"
+    content_type: str = "text"
 
 
 class DocumentResponse(BaseModel):
@@ -104,6 +142,8 @@ class DocumentResponse(BaseModel):
     status: str
     created_at: datetime
     last_ingested_at: datetime | None = None
+    content_type: str = "text"
+    category: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -215,6 +255,7 @@ class ConversationLog(BaseModel):
     visitor_name: str | None = None
     visitor_email: str | None = None
     tags: list | None = None
+    summary: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -226,6 +267,7 @@ class MessageLog(BaseModel):
     tokens_used: int
     created_at: datetime
     is_fallback: bool | None = False
+    response_time_ms: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -283,6 +325,7 @@ class AnalyticsSummary(BaseModel):
     messages_per_day: list[MessagesPerDay]
     busiest_hours: list[int]
     daily_message_usage: int | None = None  # Feature 22
+    avg_response_time_ms: float | None = None  # Feature 32
 
 
 # --- Conversation search (Feature 21) ---
@@ -296,3 +339,68 @@ class ConversationSearchResult(BaseModel):
     role: str
     snippet: str
     created_at: datetime
+
+
+# --- Feature 23: Article browser ---
+
+class ArticleItem(BaseModel):
+    id: uuid.UUID
+    title: str
+    snippet: str
+    source_url: str | None = None
+    category: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# --- Feature 29: Scheduled messages ---
+
+class ScheduledMessageCreate(BaseModel):
+    message: str = Field(..., min_length=1, max_length=4000)
+    target: str = Field(default="all_new", pattern=r"^(all_new|returning)$")
+    active: bool = True
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+
+
+class ScheduledMessageResponse(BaseModel):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    message: str
+    target: str
+    active: bool
+    start_date: datetime | None
+    end_date: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Feature 31: Conversation notes ---
+
+class ConversationNoteCreate(BaseModel):
+    author: str = Field(..., min_length=1, max_length=255)
+    content: str = Field(..., min_length=1, max_length=4000)
+
+
+class ConversationNoteResponse(BaseModel):
+    id: uuid.UUID
+    conversation_id: uuid.UUID
+    tenant_id: uuid.UUID
+    author: str
+    content: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Feature 36: Health dashboard ---
+
+class HealthDashboard(BaseModel):
+    status: str
+    db_connected: bool
+    total_tenants: int
+    total_documents: int
+    total_conversations: int
+    uptime_seconds: float
+    version: str

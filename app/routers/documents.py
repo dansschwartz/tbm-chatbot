@@ -1,4 +1,6 @@
+import base64
 import hashlib
+import io
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -19,6 +21,20 @@ from app.schemas import (
 )
 from app.services.chunking import chunk_text
 from app.services.embeddings import embed_chunks
+
+
+def _extract_pdf_text(content_b64: str) -> str:
+    """Feature 30: Extract text from base64-encoded PDF content."""
+    import pdfplumber
+
+    pdf_bytes = base64.b64decode(content_b64)
+    text_parts = []
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text_parts.append(page_text)
+    return "\n\n".join(text_parts)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/tenants/{tenant_id}/documents", tags=["documents"])
@@ -136,7 +152,20 @@ async def create_document(
     if not tenant_result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
 
-    content_hash = hashlib.sha256(data.content.encode()).hexdigest()
+    # Feature 30: PDF text extraction
+    content = data.content
+    if data.content_type == "pdf":
+        try:
+            content = _extract_pdf_text(data.content)
+            if not content.strip():
+                raise HTTPException(status_code=400, detail="Could not extract text from PDF")
+        except HTTPException:
+            raise
+        except Exception:
+            logger.exception("PDF extraction failed")
+            raise HTTPException(status_code=400, detail="Invalid PDF content or extraction failed")
+
+    content_hash = hashlib.sha256(content.encode()).hexdigest()
 
     # Check for duplicate
     existing = await db.execute(
@@ -154,12 +183,14 @@ async def create_document(
         source_url=data.source_url,
         content_hash=content_hash,
         status="processing",
+        content_type=data.content_type,
+        category=data.category,
     )
     db.add(document)
     await db.flush()
     await db.refresh(document)
 
-    background_tasks.add_task(_process_document, document.id, tenant_id, data.content)
+    background_tasks.add_task(_process_document, document.id, tenant_id, content)
 
     return document
 

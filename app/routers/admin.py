@@ -10,11 +10,13 @@ from app.database import get_db
 from app.middleware.auth import require_admin_key
 from app.models import (
     Conversation,
+    ConversationNote,
     CSATRating,
     Document,
     Message,
     MessageFeedback,
     ContactRequest,
+    ScheduledMessage,
     Tenant,
 )
 from app.routers.chat import get_daily_count
@@ -22,11 +24,15 @@ from app.schemas import (
     AnalyticsSummary,
     ContactResponse,
     ConversationLog,
+    ConversationNoteCreate,
+    ConversationNoteResponse,
     ConversationSearchResult,
     CSATResponse,
     FeedbackResponse,
     MessageLog,
     MessagesPerDay,
+    ScheduledMessageCreate,
+    ScheduledMessageResponse,
     TagCount,
     UnansweredMessage,
     UsageStats,
@@ -91,6 +97,7 @@ async def get_conversations(
             Conversation.visitor_name,
             Conversation.visitor_email,
             Conversation.tags,
+            Conversation.summary,
             func.count(Message.id).label("message_count"),
         )
         .outerjoin(Message, Message.conversation_id == Conversation.id)
@@ -110,6 +117,7 @@ async def get_conversations(
             visitor_name=row.visitor_name,
             visitor_email=row.visitor_email,
             tags=row.tags,
+            summary=row.summary,
         )
         for row in rows
     ]
@@ -351,6 +359,19 @@ async def get_analytics(
     # Feature 22: Daily usage count
     daily_usage = get_daily_count(str(tenant_id))
 
+    # Feature 32: Average response time
+    avg_rt_result = (await db.execute(
+        select(func.avg(Message.response_time_ms))
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .where(
+            Conversation.tenant_id == tenant_id,
+            Message.role == "assistant",
+            Message.response_time_ms.isnot(None),
+            Message.created_at >= since,
+        )
+    )).scalar()
+    avg_response_time = round(float(avg_rt_result), 1) if avg_rt_result is not None else None
+
     return AnalyticsSummary(
         total_conversations=total_convs,
         total_messages=total_msgs,
@@ -362,6 +383,7 @@ async def get_analytics(
         messages_per_day=messages_per_day,
         busiest_hours=busiest_hours,
         daily_message_usage=daily_usage,
+        avg_response_time_ms=avg_response_time,
     )
 
 
@@ -424,3 +446,93 @@ async def search_conversations(
         )
 
     return results
+
+
+# ── Feature 29: Scheduled Messages CRUD ──────────────────────────────────────
+
+@router.post("/scheduled-messages", response_model=ScheduledMessageResponse, status_code=status.HTTP_201_CREATED)
+async def create_scheduled_message(
+    data: ScheduledMessageCreate,
+    tenant_id: uuid.UUID = Query(...),
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    sm = ScheduledMessage(
+        tenant_id=tenant_id,
+        message=data.message,
+        target=data.target,
+        active=data.active,
+        start_date=data.start_date,
+        end_date=data.end_date,
+    )
+    db.add(sm)
+    await db.flush()
+    await db.refresh(sm)
+    return sm
+
+
+@router.get("/scheduled-messages", response_model=list[ScheduledMessageResponse])
+async def list_scheduled_messages(
+    tenant_id: uuid.UUID = Query(...),
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ScheduledMessage)
+        .where(ScheduledMessage.tenant_id == tenant_id)
+        .order_by(ScheduledMessage.created_at.desc())
+    )
+    return result.scalars().all()
+
+
+@router.delete("/scheduled-messages/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_scheduled_message(
+    message_id: uuid.UUID,
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(ScheduledMessage).where(ScheduledMessage.id == message_id))
+    sm = result.scalar_one_or_none()
+    if not sm:
+        raise HTTPException(status_code=404, detail="Scheduled message not found")
+    await db.delete(sm)
+
+
+# ── Feature 31: Conversation Notes ───────────────────────────────────────────
+
+@router.post("/conversations/{conversation_id}/notes", response_model=ConversationNoteResponse, status_code=status.HTTP_201_CREATED)
+async def add_conversation_note(
+    conversation_id: uuid.UUID,
+    data: ConversationNoteCreate,
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    conv_result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
+    conversation = conv_result.scalar_one_or_none()
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    note = ConversationNote(
+        conversation_id=conversation_id,
+        tenant_id=conversation.tenant_id,
+        author=data.author,
+        content=data.content,
+    )
+    db.add(note)
+    await db.flush()
+    await db.refresh(note)
+    return note
+
+
+@router.get("/conversations/{conversation_id}/notes", response_model=list[ConversationNoteResponse])
+async def list_conversation_notes(
+    conversation_id: uuid.UUID,
+    _: str = Depends(require_admin_key),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ConversationNote)
+        .where(ConversationNote.conversation_id == conversation_id)
+        .order_by(ConversationNote.created_at)
+    )
+    return result.scalars().all()

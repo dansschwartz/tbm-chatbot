@@ -27,7 +27,7 @@ IMPORTANT INSTRUCTIONS:
 - Do not make up information or draw from knowledge outside the provided context.
 - If sources are available, naturally reference them in your response.
 - If you cannot answer a question or the user asks to speak with someone, tell them they can use the contact form below the chat.{support_email_line}
-
+{language_instruction}
 After answering, suggest 2-3 brief follow-up questions the user might want to ask based on the context, formatted exactly as:
 SUGGESTIONS: [question 1 | question 2 | question 3]
 
@@ -131,12 +131,22 @@ async def run_rag_pipeline(
     if tenant.support_email:
         contact_section = f"If the user needs human assistance, direct them to contact: {tenant.support_email}"
 
+    # Feature 26: Multi-language instruction
+    language_instruction = ""
+    supported = getattr(tenant, "supported_languages", None) or ["en"]
+    if len(supported) > 1 or (supported and supported[0] != "en"):
+        language_instruction = (
+            "- LANGUAGE: Detect the language of the user's message and respond in that same language. "
+            f"Supported languages: {', '.join(supported)}."
+        )
+
     system_message = SYSTEM_PROMPT_TEMPLATE.format(
         tenant_name=tenant.name,
         custom_system_prompt=tenant.system_prompt,
         guidance_section=guidance_section,
         contact_section=contact_section,
         support_email_line=support_email_line,
+        language_instruction=language_instruction,
         context=context,
     )
 

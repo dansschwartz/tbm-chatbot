@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 import time
@@ -9,11 +10,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database import get_db
+from app.database import get_db, async_session
 from app.middleware.auth import get_tenant_by_slug
-from app.models import Conversation, Message, Tenant
+from app.models import Conversation, Message, ScheduledMessage, Tenant
 from app.schemas import ChatRequest, ChatResponse, SourceReference
 from app.services.rag import run_rag_pipeline
+from app.services.openai_client import chat_completion
 from app.services.webhooks import fire_webhook
 
 logger = logging.getLogger(__name__)
@@ -99,6 +101,89 @@ def _auto_tag(text: str) -> list[str]:
     return tags
 
 
+def _check_escalation_triggers(text: str, triggers: list[str] | None) -> bool:
+    """Feature 28: Check if user message contains escalation trigger phrases."""
+    if not triggers:
+        return False
+    lower = text.lower()
+    return any(t.lower() in lower for t in triggers)
+
+
+def _check_banned_words(text: str, banned_words: list[str] | None) -> dict | None:
+    """Feature 34: Check text against banned words list. Returns flags dict or None."""
+    if not banned_words:
+        return None
+    lower = text.lower()
+    found = [w for w in banned_words if w.lower() in lower]
+    if found:
+        return {"banned_words_detected": found}
+    return None
+
+
+def _filter_banned_response(text: str, banned_words: list[str] | None) -> tuple[str, bool]:
+    """Feature 34: Filter bot response for banned words. Returns (text, was_filtered)."""
+    if not banned_words:
+        return text, False
+    lower = text.lower()
+    for word in banned_words:
+        if word.lower() in lower:
+            return "I'm sorry, I can't provide a response to that. Please try rephrasing your question or contact us directly for help.", True
+    return text, False
+
+
+async def _generate_summary(conversation_id, tenant_id):
+    """Feature 24: Generate a one-line AI summary of a conversation after 5+ messages."""
+    async with async_session() as db:
+        try:
+            result = await db.execute(
+                select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at)
+            )
+            messages = result.scalars().all()
+            if len(messages) < 5:
+                return
+
+            # Check if summary already exists
+            conv_result = await db.execute(
+                select(Conversation).where(Conversation.id == conversation_id)
+            )
+            conversation = conv_result.scalar_one_or_none()
+            if not conversation or conversation.summary:
+                return
+
+            transcript = "\n".join(f"{m.role}: {m.content[:200]}" for m in messages[:10])
+            result = await chat_completion([
+                {"role": "system", "content": "Summarize this conversation in one concise sentence (max 100 words). Focus on the main topic and outcome."},
+                {"role": "user", "content": transcript},
+            ], max_tokens=100, temperature=0.2)
+            conversation.summary = result["content"].strip()[:500]
+            await db.commit()
+        except Exception:
+            logger.warning("Failed to generate conversation summary for %s", conversation_id, exc_info=True)
+
+
+async def _get_scheduled_messages(db: AsyncSession, tenant_id, is_new: bool) -> list[str]:
+    """Feature 29: Get active scheduled messages for a tenant."""
+    now = datetime.now(timezone.utc)
+    query = select(ScheduledMessage).where(
+        ScheduledMessage.tenant_id == tenant_id,
+        ScheduledMessage.active.is_(True),
+    )
+    result = await db.execute(query)
+    messages = []
+    for sm in result.scalars().all():
+        # Check date range
+        if sm.start_date and now < sm.start_date.replace(tzinfo=timezone.utc):
+            continue
+        if sm.end_date and now > sm.end_date.replace(tzinfo=timezone.utc):
+            continue
+        # Check target
+        if sm.target == "all_new" and is_new:
+            messages.append(sm.message)
+        elif sm.target == "returning" and not is_new:
+            messages.append(sm.message)
+    return messages
+
+
 def _is_within_business_hours(business_hours: dict | None) -> bool:
     """Feature 8: Check if current time is within configured business hours."""
     if not business_hours:
@@ -170,14 +255,24 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
         conversation.visitor_name = request.visitor_name
         conversation.visitor_email = request.visitor_email
 
+    # Feature 34: Check user message for banned words
+    user_content_flags = _check_banned_words(request.message, tenant.banned_words)
+
     # Store user message
     user_msg = Message(
         conversation_id=conversation.id,
         role="user",
         content=request.message,
         tokens_used=0,
+        content_flags=user_content_flags,
     )
     db.add(user_msg)
+
+    # Feature 32: Start response timer
+    response_start = time.time()
+
+    # Feature 28: Check for escalation triggers
+    escalation_triggered = _check_escalation_triggers(request.message, tenant.escalation_triggers)
 
     # Run RAG pipeline
     try:
@@ -193,9 +288,35 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
     is_fallback = rag_result.get("is_fallback", False)
     suggestions = rag_result.get("suggestions", [])
 
+    # Feature 34: Filter bot response for banned words
+    response_text, was_filtered = _filter_banned_response(response_text, tenant.banned_words)
+
+    # Feature 28: If escalation triggered, prepend offer to connect with human
+    if escalation_triggered:
+        escalation_notice = (
+            "**It sounds like you'd like to speak with a person.** "
+            "I can connect you with our team — just click the contact form below the chat, "
+            "or I can continue trying to help.\n\n"
+        )
+        response_text = escalation_notice + response_text
+        # Add escalation tag
+        existing_tags = conversation.tags or []
+        if "escalation" not in existing_tags:
+            conversation.tags = existing_tags + ["escalation"]
+
     # Feature 8: Prepend away message if outside business hours
     if not _is_within_business_hours(tenant.business_hours) and tenant.away_message:
         response_text = f"**{tenant.away_message}**\n\n{response_text}"
+
+    # Feature 29: Scheduled messages for new conversations
+    if is_new_conversation:
+        scheduled_msgs = await _get_scheduled_messages(db, tenant.id, is_new_conversation)
+        if scheduled_msgs:
+            announcement = "\n\n".join(f"📢 {m}" for m in scheduled_msgs)
+            response_text = f"{announcement}\n\n---\n\n{response_text}"
+
+    # Feature 32: Calculate response time
+    response_time_ms = int((time.time() - response_start) * 1000)
 
     # Store assistant message
     assistant_msg = Message(
@@ -204,6 +325,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
         content=response_text,
         tokens_used=rag_result["tokens_used"],
         is_fallback=is_fallback,
+        response_time_ms=response_time_ms,
     )
     db.add(assistant_msg)
     await db.flush()
@@ -234,6 +356,21 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
             "message": request.message,
             "response": response_text,
         })
+    # Feature 28: Fire escalation webhook
+    if escalation_triggered:
+        await fire_webhook(tenant, "escalation.triggered", {
+            "conversation_id": str(conversation.id),
+            "session_id": request.session_id,
+            "trigger_message": request.message,
+        })
+
+    # Feature 24: Generate conversation summary after 5+ messages (async, non-blocking)
+    msg_count_result = await db.execute(
+        select(func.count(Message.id)).where(Message.conversation_id == conversation.id)
+    )
+    msg_count = msg_count_result.scalar() or 0
+    if msg_count >= 5 and not conversation.summary:
+        asyncio.create_task(_generate_summary(conversation.id, tenant.id))
 
     return ChatResponse(
         response=response_text,

@@ -47,6 +47,22 @@ class Tenant(Base):
     # Feature 22: Per-tenant daily message quota
     daily_message_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Feature 25: Custom CSS injection
+    custom_css: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Feature 26: Multi-language support
+    default_language: Mapped[str] = mapped_column(String(10), nullable=False, default="en")
+    supported_languages: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=lambda: ["en"])
+
+    # Feature 27: Automated greeting variants
+    greeting_variants: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)
+
+    # Feature 28: Escalation triggers
+    escalation_triggers: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)
+
+    # Feature 34: Banned words / content filter
+    banned_words: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)
+
     documents: Mapped[list["Document"]] = relationship(back_populates="tenant", cascade="all, delete-orphan")
     conversations: Mapped[list["Conversation"]] = relationship(back_populates="tenant", cascade="all, delete-orphan")
     contact_requests: Mapped[list["ContactRequest"]] = relationship(back_populates="tenant", cascade="all, delete-orphan")
@@ -59,7 +75,11 @@ class Document(Base):
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     source_url: Mapped[str | None] = mapped_column(String(2000))
+    # Feature 23: Category for article browser
+    category: Mapped[str | None] = mapped_column(String(255), nullable=True)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Feature 30: PDF support — "text" or "pdf"
+    content_type: Mapped[str] = mapped_column(String(20), nullable=False, default="text")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="processing")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     # Feature 18: Content freshness
@@ -103,6 +123,9 @@ class Conversation(Base):
     # Feature 10: Auto-tagging conversations
     tags: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)
 
+    # Feature 24: Conversation summary
+    summary: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     tenant: Mapped["Tenant"] = relationship(back_populates="conversations")
     messages: Mapped[list["Message"]] = relationship(back_populates="conversation", cascade="all, delete-orphan")
 
@@ -119,6 +142,12 @@ class Message(Base):
 
     # Feature 9: Unanswered questions log
     is_fallback: Mapped[bool] = mapped_column(Boolean, nullable=True, default=False)
+
+    # Feature 32: Response time tracking (ms, bot messages only)
+    response_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Feature 34: Content filter flags
+    content_flags: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     conversation: Mapped["Conversation"] = relationship(back_populates="messages")
     feedback: Mapped[list["MessageFeedback"]] = relationship(back_populates="message", cascade="all, delete-orphan")
@@ -163,4 +192,30 @@ class CSATRating(Base):
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+# Feature 29: Scheduled messages / campaigns
+class ScheduledMessage(Base):
+    __tablename__ = "scheduled_messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    target: Mapped[str] = mapped_column(String(20), nullable=False, default="all_new")  # "all_new" or "returning"
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    start_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+# Feature 31: Conversation notes (admin internal)
+class ConversationNote(Base):
+    __tablename__ = "conversation_notes"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False, index=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True)
+    author: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
