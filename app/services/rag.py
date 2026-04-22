@@ -103,14 +103,16 @@ async def run_rag_pipeline(
 
     # Log similarity scores for debugging
     if chunks:
-        logger.info("Top chunk similarities for '%s': %s", user_message[:50],
-                     [(c["document_title"], round(c["similarity"], 4)) for c in chunks[:3]])
+        logger.warning("RAG DEBUG - Top chunk similarities for '%s': %s", user_message[:50],
+                     [(c["document_title"], round(c["similarity"], 4)) for c in chunks[:5]])
     else:
-        logger.info("No chunks found for query: '%s'", user_message[:50])
+        logger.warning("RAG DEBUG - No chunks found at all for query: '%s'", user_message[:50])
 
     # Feature 9: Detect fallback — no relevant chunks above threshold
     relevant_chunks = [c for c in chunks if c["similarity"] > FALLBACK_SIMILARITY_THRESHOLD]
     is_fallback = len(relevant_chunks) == 0
+    logger.warning("RAG DEBUG - Relevant chunks above threshold (%.2f): %d out of %d total", 
+                   FALLBACK_SIMILARITY_THRESHOLD, len(relevant_chunks), len(chunks))
 
     if chunks:
         context_parts = []
