@@ -68,6 +68,15 @@ class TenantUpdate(BaseModel):
     escalation_triggers: list[str] | None = None
     # Feature 34: Banned words
     banned_words: list[str] | None = None
+    # Feature 39: WhatsApp
+    whatsapp_enabled: bool | None = None
+    twilio_account_sid: str | None = None
+    twilio_auth_token: str | None = None
+    twilio_whatsapp_number: str | None = None
+    # Feature 40: Email notifications
+    email_notifications_enabled: bool | None = None
+    # Feature 44: A/B testing
+    ab_test_enabled: bool | None = None
 
 
 class TenantResponse(BaseModel):
@@ -95,6 +104,12 @@ class TenantResponse(BaseModel):
     greeting_variants: list | None = None
     escalation_triggers: list | None = None
     banned_words: list | None = None
+    whatsapp_enabled: bool = False
+    twilio_account_sid: str | None = None
+    twilio_auth_token: str | None = None
+    twilio_whatsapp_number: str | None = None
+    email_notifications_enabled: bool = False
+    ab_test_enabled: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -256,6 +271,8 @@ class ConversationLog(BaseModel):
     visitor_email: str | None = None
     tags: list | None = None
     summary: str | None = None
+    channel: str = "web"
+    greeting_variant_used: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -404,3 +421,28 @@ class HealthDashboard(BaseModel):
     total_conversations: int
     uptime_seconds: float
     version: str
+
+
+# --- Feature 42: Document auto-crawler ---
+
+class CrawlRequest(BaseModel):
+    url: str = Field(..., min_length=1, max_length=2000)
+    title: str | None = None
+    category: str | None = None
+
+
+# --- Feature 44: A/B Testing analytics ---
+
+class ABTestResult(BaseModel):
+    variant: str
+    conversation_count: int
+    avg_messages: float
+
+
+# --- Feature 45: Smart Insights ---
+
+class Insight(BaseModel):
+    type: str  # "content_gap", "performance", "engagement"
+    title: str
+    description: str
+    priority: str = "medium"  # "high", "medium", "low"

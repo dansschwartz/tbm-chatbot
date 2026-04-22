@@ -1,8 +1,12 @@
+import csv
+import io
+import json
 import uuid
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +17,7 @@ from app.models import (
     ConversationNote,
     CSATRating,
     Document,
+    DocumentChunk,
     Message,
     MessageFeedback,
     ContactRequest,
@@ -21,6 +26,7 @@ from app.models import (
 )
 from app.routers.chat import get_daily_count
 from app.schemas import (
+    ABTestResult,
     AnalyticsSummary,
     ContactResponse,
     ConversationLog,
@@ -29,6 +35,7 @@ from app.schemas import (
     ConversationSearchResult,
     CSATResponse,
     FeedbackResponse,
+    Insight,
     MessageLog,
     MessagesPerDay,
     ScheduledMessageCreate,

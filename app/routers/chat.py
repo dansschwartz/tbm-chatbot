@@ -277,11 +277,11 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
     # Run RAG pipeline
     try:
         rag_result = await run_rag_pipeline(db, tenant, request.message)
-    except Exception:
-        logger.exception("RAG pipeline failed for tenant %s", tenant.slug)
+    except Exception as e:
+        logger.exception("RAG pipeline failed for tenant %s: %s", tenant.slug, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate response. Please try again.",
+            detail=f"Failed to generate response: {str(e)[:200]}",
         )
 
     response_text = rag_result["response"]
