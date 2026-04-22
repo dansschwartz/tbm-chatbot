@@ -189,7 +189,7 @@ async def create_document(
         category=data.category,
     )
     db.add(document)
-    await db.flush()
+    await db.commit()
     await db.refresh(document)
 
     await _process_document(document.id, tenant_id, content)
@@ -323,7 +323,7 @@ async def crawl_document(
         category=data.category,
     )
     db.add(document)
-    await db.flush()
+    await db.commit()
     await db.refresh(document)
 
     await _process_document(document.id, tenant_id, content)
