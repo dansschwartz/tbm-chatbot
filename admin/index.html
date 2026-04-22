@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TBM Chatbot Admin</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-icon">&#x1f916;</span>
+                <h1>TBM Admin</h1>
+                <span class="version">v3.0</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#" data-page="overview" class="active"><span class="nav-icon">&#x1f4ca;</span> Overview</a></li>
+                <li><a href="#" data-page="tenants"><span class="nav-icon">&#x1f3e2;</span> Tenants</a></li>
+                <li><a href="#" data-page="live"><span class="nav-icon">&#x1f534;</span> Live Monitor</a></li>
+                <li><a href="#" data-page="insights"><span class="nav-icon">&#x1f4a1;</span> Insights</a></li>
+                <li><a href="#" data-page="settings"><span class="nav-icon">&#x2699;&#xfe0f;</span> Settings</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <button id="btn-new-tenant" class="btn btn-primary btn-block">+ New Tenant</button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main id="content">
+            <!-- Auth Screen -->
+            <div id="auth-screen" class="page active">
+                <div class="auth-card">
+                    <h2>Admin Login</h2>
+                    <p>Enter your admin API key to continue.</p>
+                    <input type="password" id="api-key-input" placeholder="Admin API Key" autocomplete="off">
+                    <button id="btn-login" class="btn btn-primary">Login</button>
+                    <p id="auth-error" class="error-text"></p>
+                </div>
+            </div>
+
+            <!-- Overview Page -->
+            <div id="page-overview" class="page">
+                <h2>Dashboard Overview</h2>
+                <div class="stats-grid" id="overview-stats"></div>
+                <div class="card mt-4">
+                    <h3>Messages Per Day (Last 30 days)</h3>
+                    <div id="messages-chart" class="bar-chart"></div>
+                </div>
+            </div>
+
+            <!-- Tenants Page -->
+            <div id="page-tenants" class="page">
+                <div class="page-header">
+                    <h2>Tenants</h2>
+                </div>
+                <div id="tenants-list" class="table-container"></div>
+            </div>
+
+            <!-- Tenant Detail Page -->
+            <div id="page-tenant-detail" class="page">
+                <button class="btn btn-ghost mb-2" id="btn-back-tenants">&larr; Back to Tenants</button>
+                <div id="tenant-header"></div>
+                <div class="tabs" id="tenant-tabs">
+                    <button class="tab active" data-tab="config">Config</button>
+                    <button class="tab" data-tab="documents">Documents</button>
+                    <button class="tab" data-tab="conversations">Conversations</button>
+                    <button class="tab" data-tab="contacts">Contacts</button>
+                    <button class="tab" data-tab="feedback">Feedback</button>
+                    <button class="tab" data-tab="unanswered">Unanswered</button>
+                    <button class="tab" data-tab="analytics">Analytics</button>
+                    <button class="tab" data-tab="ab-test">A/B Test</button>
+                </div>
+                <div id="tenant-tab-content"></div>
+            </div>
+
+            <!-- Live Monitor Page -->
+            <div id="page-live" class="page">
+                <h2><span class="live-dot"></span> Live Conversations</h2>
+                <div class="form-row mb-2">
+                    <select id="live-tenant-select"><option value="">Select tenant...</option></select>
+                </div>
+                <div id="live-conversations"></div>
+            </div>
+
+            <!-- Insights Page -->
+            <div id="page-insights" class="page">
+                <h2>Smart Insights</h2>
+                <div class="form-row mb-2">
+                    <select id="insights-tenant-select"><option value="">Select tenant...</option></select>
+                </div>
+                <div id="insights-list"></div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="page-settings" class="page">
+                <h2>Settings</h2>
+                <div class="card">
+                    <h3>System Health</h3>
+                    <div id="health-status"></div>
+                </div>
+                <div class="card mt-4">
+                    <h3>API Key</h3>
+                    <div class="form-group">
+                        <label>Admin API Key</label>
+                        <input type="text" id="settings-api-key" readonly class="mono">
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Tenant Wizard -->
+            <div id="page-wizard" class="page">
+                <h2>New Tenant Wizard</h2>
+                <div class="wizard-progress">
+                    <div class="step active" data-step="1">1. Basic Info</div>
+                    <div class="step" data-step="2">2. Widget</div>
+                    <div class="step" data-step="3">3. Knowledge Base</div>
+                    <div class="step" data-step="4">4. Quick Replies</div>
+                    <div class="step" data-step="5">5. Review</div>
+                </div>
+                <div class="wizard-body">
+                    <!-- Step 1 -->
+                    <div class="wizard-step active" data-step="1">
+                        <div class="form-group">
+                            <label>Organization Name *</label>
+                            <input type="text" id="wiz-name" placeholder="e.g. DC Soccer Club">
+                        </div>
+                        <div class="form-group">
+                            <label>Slug * <small>(lowercase, dashes only)</small></label>
+                            <input type="text" id="wiz-slug" placeholder="e.g. dc-soccer-club">
+                        </div>
+                        <div class="form-group">
+                            <label>Support Email</label>
+                            <input type="email" id="wiz-email" placeholder="support@example.org">
+                        </div>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="wizard-step" data-step="2">
+                        <div class="form-group">
+                            <label>Primary Color</label>
+                            <input type="color" id="wiz-color" value="#2563eb">
+                        </div>
+                        <div class="form-group">
+                            <label>Bot Name</label>
+                            <input type="text" id="wiz-bot-name" placeholder="AI Assistant" value="AI Assistant">
+                        </div>
+                        <div class="form-group">
+                            <label>Welcome Message</label>
+                            <input type="text" id="wiz-welcome" value="Hi! How can I help you today?">
+                        </div>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="wizard-step" data-step="3">
+                        <div class="form-group">
+                            <label>Paste URLs to crawl (one per line)</label>
+                            <textarea id="wiz-urls" rows="4" placeholder="https://example.org/about&#10;https://example.org/faq"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Or paste content directly</label>
+                            <textarea id="wiz-content" rows="4" placeholder="Paste text content here..."></textarea>
+                        </div>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="wizard-step" data-step="4">
+                        <div class="form-group">
+                            <label>Quick Replies <small>(comma-separated)</small></label>
+                            <input type="text" id="wiz-quick-replies" placeholder="How do I register?, What are the fees?, Contact us">
+                        </div>
+                        <div class="form-group">
+                            <label>System Prompt</label>
+                            <textarea id="wiz-system-prompt" rows="3">You are a helpful assistant for a not-for-profit organization.</textarea>
+                        </div>
+                    </div>
+                    <!-- Step 5 -->
+                    <div class="wizard-step" data-step="5">
+                        <h3>Review</h3>
+                        <div id="wiz-review"></div>
+                    </div>
+                </div>
+                <div class="wizard-footer">
+                    <button class="btn btn-ghost" id="wiz-prev" disabled>Previous</button>
+                    <button class="btn btn-primary" id="wiz-next">Next</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container"></div>
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h3 id="modal-title"></h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
