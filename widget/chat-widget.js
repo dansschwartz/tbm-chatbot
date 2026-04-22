@@ -647,7 +647,7 @@
               '<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>' +
             '</button>' +
           '</div>' +
-          '<div class="tbm-powered-by">Powered by TBM Chatbot</div>' +
+          '<div class="tbm-powered-by">AI support can make mistakes · Powered by TBM</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(container);
