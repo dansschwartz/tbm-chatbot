@@ -192,9 +192,31 @@ async def create_document(
     await db.commit()
     await db.refresh(document)
 
-    # Process in background - commit first so background task can find the document
-    import asyncio
-    asyncio.ensure_future(_process_document(document.id, tenant_id, content))
+    # Process inline — Railway doesn't support background tasks reliably
+    try:
+        from app.services.chunking import chunk_text
+        from app.services.embeddings import embed_chunks
+        from app.models import DocumentChunk
+
+        text_chunks = chunk_text(content)
+        if text_chunks:
+            embeddings = await embed_chunks(text_chunks)
+            for i, (chunk_content, embedding) in enumerate(zip(text_chunks, embeddings)):
+                chunk_obj = DocumentChunk(
+                    document_id=document.id,
+                    tenant_id=tenant_id,
+                    content=chunk_content,
+                    embedding=embedding,
+                    chunk_metadata={"chunk_index": i, "total_chunks": len(text_chunks)},
+                    chunk_index=i,
+                )
+                db.add(chunk_obj)
+            document.status = "ready"
+        else:
+            document.status = "error"
+    except Exception as exc:
+        logger.exception("Document processing failed: %s", exc)
+        document.status = "error"
 
     return document
 
@@ -241,7 +263,18 @@ async def bulk_create_documents(
             db.add(document)
             await db.commit()
 
-            await _process_document(document.id, tenant_id, item.content)
+            # Process inline
+            from app.services.chunking import chunk_text as ct
+            from app.services.embeddings import embed_chunks as ec
+            from app.models import DocumentChunk as DC
+            text_chunks = ct(item.content)
+            if text_chunks:
+                embs = await ec(text_chunks)
+                for ci, (cc, ce) in enumerate(zip(text_chunks, embs)):
+                    db.add(DC(document_id=document.id, tenant_id=tenant_id, content=cc, embedding=ce, chunk_metadata={"chunk_index": ci}, chunk_index=ci))
+                document.status = "ready"
+            else:
+                document.status = "error"
             succeeded += 1
 
         except Exception:
