@@ -611,7 +611,7 @@
             '<span class="tbm-chat-header-name">Chat</span>' +
           '</div>' +
           '<div class="tbm-chat-header-actions">' +
-            '<button class="tbm-chat-articles-btn" aria-label="Browse articles" title="Help articles">&#128218;</button>' +
+            '<button class="tbm-chat-articles-btn" aria-label="Browse articles" title="Help articles"><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><line x1='21' y1='21' x2='16.65' y2='16.65'/><line x1='11' y1='8' x2='11' y2='14'/><line x1='8' y1='11' x2='14' y2='11'/></svg></button>' +
             '<button class="tbm-chat-export" aria-label="Download transcript" title="Download transcript">' +
               '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
             '</button>' +
