@@ -46,7 +46,7 @@ def _parse_suggestions(text: str) -> tuple[str, list[str]]:
     return cleaned, suggestions
 
 # Similarity threshold below which we consider the response a fallback
-FALLBACK_SIMILARITY_THRESHOLD = 0.3
+FALLBACK_SIMILARITY_THRESHOLD = 0.15  # Lowered — pgvector cosine distance can be subtle
 
 
 async def retrieve_relevant_chunks(
@@ -100,6 +100,13 @@ async def run_rag_pipeline(
     query_embedding = await embed_query(user_message)
 
     chunks = await retrieve_relevant_chunks(db, tenant.id, query_embedding)
+
+    # Log similarity scores for debugging
+    if chunks:
+        logger.info("Top chunk similarities for '%s': %s", user_message[:50],
+                     [(c["document_title"], round(c["similarity"], 4)) for c in chunks[:3]])
+    else:
+        logger.info("No chunks found for query: '%s'", user_message[:50])
 
     # Feature 9: Detect fallback — no relevant chunks above threshold
     relevant_chunks = [c for c in chunks if c["similarity"] > FALLBACK_SIMILARITY_THRESHOLD]
