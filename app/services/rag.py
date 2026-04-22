@@ -66,11 +66,11 @@ async def retrieve_relevant_chunks(
             dc.chunk_index,
             d.title AS document_title,
             d.source_url,
-            1 - (dc.embedding <=> :embedding::vector) AS similarity
+            1 - (dc.embedding <=> CAST(:embedding AS vector)) AS similarity
         FROM document_chunks dc
         JOIN documents d ON dc.document_id = d.id
-        WHERE dc.tenant_id = :tenant_id
-        ORDER BY dc.embedding <=> :embedding::vector
+        WHERE dc.tenant_id = CAST(:tenant_id AS uuid)
+        ORDER BY dc.embedding <=> CAST(:embedding AS vector)
         LIMIT :top_k
     """)
 
