@@ -97,11 +97,11 @@
             usage.forEach(u => { totalConvs += u.total_conversations; totalMsgs += u.total_messages; totalDocs += u.documents_count; });
 
             const statsHtml = `
-                <div class="stat-card accent"><span class="stat-label">Tenants</span><span class="stat-value">${tenants.length}</span></div>
-                <div class="stat-card accent"><span class="stat-label">Conversations</span><span class="stat-value">${totalConvs}</span></div>
-                <div class="stat-card accent"><span class="stat-label">Messages</span><span class="stat-value">${totalMsgs}</span></div>
-                <div class="stat-card accent"><span class="stat-label">Documents</span><span class="stat-value">${totalDocs}</span></div>
-                <div class="stat-card accent"><span class="stat-label">Uptime</span><span class="stat-value">${Math.floor(health.uptime_seconds / 3600)}h</span></div>
+                <div class="stat-card accent"><span class="stat-icon">&#x1f3e2;</span><span class="stat-label">Tenants</span><span class="stat-value">${tenants.length}</span></div>
+                <div class="stat-card accent-coral"><span class="stat-icon">&#x1f4ac;</span><span class="stat-label">Conversations</span><span class="stat-value">${totalConvs.toLocaleString()}</span></div>
+                <div class="stat-card accent-gold"><span class="stat-icon">&#x1f4e8;</span><span class="stat-label">Messages</span><span class="stat-value">${totalMsgs.toLocaleString()}</span></div>
+                <div class="stat-card accent-steel"><span class="stat-icon">&#x1f4c4;</span><span class="stat-label">Documents</span><span class="stat-value">${totalDocs.toLocaleString()}</span></div>
+                <div class="stat-card accent-success"><span class="stat-icon">&#x2705;</span><span class="stat-label">Uptime</span><span class="stat-value">${Math.floor(health.uptime_seconds / 3600)}h</span></div>
             `;
             $('#overview-stats').innerHTML = statsHtml;
 
@@ -369,15 +369,16 @@
             const convos = await api(`/api/admin/tenants/${currentTenant.id}/conversations`);
             if (!convos.length) { container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#x1f4ac;</div><p>No conversations yet.</p></div>'; return; }
 
-            let html = '<table><thead><tr><th>Visitor</th><th>Messages</th><th>Tags</th><th>Channel</th><th>Summary</th><th>Last Active</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Visitor</th><th>Messages</th><th>Last Message</th><th>Tags</th><th>Channel</th><th>Last Active</th></tr></thead><tbody>';
             convos.forEach(c => {
                 const tags = (c.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join(' ');
+                const preview = c.summary ? c.summary.substring(0, 60) + (c.summary.length > 60 ? '...' : '') : '-';
                 html += `<tr class="clickable" data-conv="${c.id}">
                     <td>${esc(c.visitor_name || 'Anonymous')}<br><small class="text-muted">${esc(c.visitor_email || '')}</small></td>
                     <td>${c.message_count}</td>
+                    <td class="truncate text-sm" style="max-width:240px;color:var(--text-muted);font-style:italic">${esc(preview)}</td>
                     <td>${tags || '-'}</td>
                     <td><span class="tag">${c.channel || 'web'}</span></td>
-                    <td class="truncate text-sm">${esc(c.summary || '-')}</td>
                     <td class="text-muted text-sm">${timeAgo(c.last_message_at)}</td>
                 </tr>`;
             });
@@ -432,12 +433,24 @@
 
             const pos = feedback.filter(f => f.rating === 'positive').length;
             const neg = feedback.length - pos;
+            const approvalPct = feedback.length ? Math.round(pos / feedback.length * 100) : 0;
             let html = `
                 <div class="stats-grid mb-2">
-                    <div class="stat-card"><span class="stat-label">Total</span><span class="stat-value">${feedback.length}</span></div>
-                    <div class="stat-card"><span class="stat-label">Positive</span><span class="stat-value" style="color:var(--success)">${pos}</span></div>
-                    <div class="stat-card"><span class="stat-label">Negative</span><span class="stat-value" style="color:var(--danger)">${neg}</span></div>
-                    <div class="stat-card"><span class="stat-label">Approval Rate</span><span class="stat-value">${feedback.length ? Math.round(pos / feedback.length * 100) : 0}%</span></div>
+                    <div class="stat-card accent"><span class="stat-icon">&#x1f4ca;</span><span class="stat-label">Total Feedback</span><span class="stat-value">${feedback.length}</span></div>
+                    <div class="stat-card accent-success"><span class="stat-icon">&#x1f44d;</span><span class="stat-label">Positive</span><span class="stat-value" style="color:var(--success)">${pos}</span></div>
+                    <div class="stat-card accent-coral"><span class="stat-icon">&#x1f44e;</span><span class="stat-label">Negative</span><span class="stat-value" style="color:var(--coral)">${neg}</span></div>
+                    <div class="stat-card accent-gold"><span class="stat-icon">&#x2b50;</span><span class="stat-label">Approval Rate</span><span class="stat-value">${approvalPct}%</span></div>
+                </div>
+                <div class="card mb-2">
+                    <h3>Satisfaction Trend</h3>
+                    <div class="satisfaction-bar">
+                        <div class="sat-positive" style="width:${approvalPct}%"></div>
+                        <div class="sat-negative" style="width:${100 - approvalPct}%"></div>
+                    </div>
+                    <div class="satisfaction-legend">
+                        <span><span class="dot" style="background:var(--success)"></span> Positive (${pos})</span>
+                        <span><span class="dot" style="background:var(--coral)"></span> Negative (${neg})</span>
+                    </div>
                 </div>
                 <table><thead><tr><th>Rating</th><th>Message ID</th><th>When</th></tr></thead><tbody>`;
             feedback.slice(0, 50).forEach(f => {
@@ -458,10 +471,17 @@
             const items = await api(`/api/admin/unanswered?tenant_id=${currentTenant.id}`);
             if (!items.length) { container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#x2705;</div><p>No unanswered questions — great coverage!</p></div>'; return; }
 
-            let html = '<table><thead><tr><th>User Question</th><th>Bot Response</th><th>When</th></tr></thead><tbody>';
+            let html = `<div class="unanswered-alert">
+                <span class="unanswered-alert-icon">&#x26a0;&#xfe0f;</span>
+                <div class="unanswered-alert-text">
+                    <strong>${items.length} unanswered question${items.length !== 1 ? 's' : ''}</strong>
+                    <p>These questions could not be answered from your knowledge base. Consider adding content to cover these topics.</p>
+                </div>
+            </div>`;
+            html += '<table><thead><tr><th>User Question</th><th>Bot Response</th><th>When</th></tr></thead><tbody>';
             items.forEach(q => {
                 html += `<tr>
-                    <td>${esc(q.user_question)}</td>
+                    <td><strong>${esc(q.user_question)}</strong></td>
                     <td class="truncate text-muted">${esc(q.bot_response)}</td>
                     <td class="text-muted text-sm">${timeAgo(q.created_at)}</td>
                 </tr>`;
@@ -542,12 +562,14 @@
                 for (const c of convos.slice(0, 20)) {
                     const isNew = lastLiveTimestamp && new Date(c.last_message_at) > new Date(lastLiveTimestamp);
                     const tags = (c.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join(' ');
+                    const preview = c.summary ? c.summary.substring(0, 80) + (c.summary.length > 80 ? '...' : '') : '';
                     html += `<div class="live-card ${isNew ? 'new' : ''}" data-conv="${c.id}">
                         <div class="flex justify-between items-center">
                             <h4>${esc(c.visitor_name || 'Anonymous')}</h4>
                             <span class="text-muted text-sm">${c.message_count} msgs &middot; ${timeAgo(c.last_message_at)}</span>
                         </div>
                         <div class="live-meta">${tags} <span class="tag">${c.channel || 'web'}</span></div>
+                        ${preview ? `<div class="live-preview">"${esc(preview)}"</div>` : ''}
                     </div>`;
                 }
                 $('#live-conversations').innerHTML = html || '<p class="text-muted">No active conversations.</p>';

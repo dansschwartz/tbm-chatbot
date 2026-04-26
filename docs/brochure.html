@@ -11,11 +11,28 @@
   body { font-family:'Inter',system-ui,sans-serif; color:#5484A4; line-height:1.6; background:#fff; }
   
   /* Print styles */
+  @page { 
+    size: letter; 
+    margin: 0.5in; 
+  }
   @media print {
-    body { font-size:11pt; }
+    body { font-size:10pt; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .page-break { page-break-before:always; }
-    .hero { padding:40px !important; min-height:auto !important; }
-    section { padding:30px 40px !important; }
+    .hero { padding:40px !important; min-height:auto !important; page-break-after:always; }
+    section { padding:24px 0 !important; }
+    section.full { padding:24px 0 !important; background:#f2f5f8 !important; -webkit-print-color-adjust:exact; }
+    section.dark { background:#2a3f52 !important; color:#fff !important; -webkit-print-color-adjust:exact; page-break-inside:avoid; }
+    .features { grid-template-columns:repeat(2,1fr) !important; gap:16px !important; }
+    .feature { page-break-inside:avoid; padding:16px !important; }
+    .comp-table { font-size:9pt; page-break-inside:avoid; }
+    .comp-table th, .comp-table td { padding:6px 8px !important; }
+    .pricing-cards { grid-template-columns:repeat(3,1fr) !important; page-break-inside:avoid; }
+    .nfp-grid { grid-template-columns:repeat(3,1fr) !important; page-break-inside:avoid; }
+    .stats { page-break-inside:avoid; }
+    .steps { grid-template-columns:repeat(5,1fr) !important; page-break-inside:avoid; }
+    .cta { page-break-inside:avoid; margin:20px 0 !important; padding:30px !important; }
+    h2 { font-size:22pt; page-break-after:avoid; }
+    .footer { page-break-before:avoid; }
   }
   
   /* Hero */
@@ -31,7 +48,7 @@
   .hero-stat { display:inline-block; background:rgba(9,161,161,0.15); border:1px solid rgba(9,161,161,0.3); border-radius:8px; padding:8px 20px; color:#F6C992; font-weight:700; font-size:14px; }
   
   /* Sections */
-  section { padding:60px; max-width:900px; margin:0 auto; }
+  section { padding:60px; max-width:7.5in; margin:0 auto; }
   section.full { max-width:100%; background:#f2f5f8; padding:60px; }
   section.dark { background:#2a3f52; color:#fff; }
   
@@ -125,6 +142,15 @@
 <body>
 
 <!-- HERO -->
+<style>
+@media print {
+  .hero { page-break-after:always !important; }
+  section.full { page-break-before:always !important; }
+  .page-break { page-break-before:always !important; }
+  body { width:7.5in !important; }
+  * { max-width:7.5in !important; }
+}
+</style>
 <div class="hero">
   <div class="hero-badge">AI-Powered Customer Support</div>
   <h1>Your visitors have questions.<br><span>Answer them instantly.</span></h1>

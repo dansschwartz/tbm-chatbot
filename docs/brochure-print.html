@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TBM AI Assistant — Product Brochure</title>
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',system-ui,sans-serif; color:#333; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .page { width:8.5in; min-height:11in; padding:0.6in; page-break-after:always; position:relative; overflow:hidden; }
+  .page:last-child { page-break-after:auto; }
+  
+  /* Colors */
+  :root {
+    --teal: #09A1A1;
+    --teal-dark: #078888;
+    --coral: #FA6E82;
+    --gold: #F6C992;
+    --rose: #D396A6;
+    --steel: #5484A4;
+    --steel-dark: #2a3f52;
+    --blue-gray: #ACC0D3;
+    --light-bg: #f2f5f8;
+  }
+  
+  h1 { font-size:36pt; font-weight:900; line-height:1.1; color:var(--steel-dark); }
+  h2 { font-size:20pt; font-weight:800; color:var(--steel-dark); margin-bottom:14px; }
+  h3 { font-size:11pt; font-weight:700; color:var(--steel-dark); margin-bottom:6px; }
+  p { font-size:9.5pt; line-height:1.5; color:#555; margin-bottom:8px; }
+  
+  /* PAGE 1: Cover */
+  .cover { background:linear-gradient(135deg,var(--steel-dark),var(--steel)); color:#fff; display:flex; flex-direction:column; justify-content:center; }
+  .cover h1 { color:#fff; font-size:40pt; margin-bottom:12px; }
+  .cover h1 span { color:var(--gold); }
+  .cover .sub { font-size:13pt; color:var(--blue-gray); max-width:5.5in; margin-bottom:24px; line-height:1.5; }
+  .cover .badge { display:inline-block; background:rgba(246,201,146,0.2); border:1px solid var(--gold); border-radius:16px; padding:6px 18px; font-size:9pt; color:var(--gold); font-weight:600; letter-spacing:1px; }
+  .cover .stats-row { display:flex; gap:24px; margin-top:36px; }
+  .cover .stat-box { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:16px 24px; text-align:center; }
+  .cover .stat-num { font-size:28pt; font-weight:900; color:#fff; }
+  .cover .stat-lbl { font-size:8pt; color:var(--blue-gray); text-transform:uppercase; letter-spacing:1px; }
+  
+  /* PAGE 2: How + Features */
+  .steps { display:flex; gap:8px; margin:16px 0 24px; }
+  .step { flex:1; text-align:center; background:var(--light-bg); border-radius:8px; padding:12px 6px; }
+  .step-n { width:24px; height:24px; background:var(--teal); color:#fff; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:10pt; margin-bottom:6px; }
+  .step-t { font-size:8pt; color:#555; }
+  
+  .feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .feat { background:var(--light-bg); border-radius:8px; padding:14px; }
+  .feat-icon { font-size:18pt; margin-bottom:4px; }
+  .feat h3 { font-size:10pt; margin-bottom:4px; }
+  .feat ul { font-size:8.5pt; color:#555; padding-left:14px; margin:0; }
+  .feat li { margin-bottom:2px; line-height:1.4; }
+  
+  /* PAGE 3: Comparison */
+  table.comp { width:100%; border-collapse:collapse; font-size:8pt; margin-top:12px; }
+  table.comp th { background:var(--steel-dark); color:#fff; padding:8px 6px; text-align:left; font-size:7.5pt; text-transform:uppercase; letter-spacing:0.5px; }
+  table.comp th.ours { background:var(--teal); }
+  table.comp td { padding:6px; border-bottom:1px solid #eee; }
+  table.comp .feat-name { font-weight:600; color:#333; }
+  table.comp .yes { color:var(--teal); font-weight:700; }
+  table.comp .no { color:var(--coral); }
+  table.comp .ours-col { background:#f0fafa; font-weight:600; }
+  
+  /* Pricing */
+  .price-row { display:flex; gap:16px; margin:16px 0; }
+  .price-box { flex:1; border:2px solid #eee; border-radius:10px; padding:16px; text-align:center; }
+  .price-box.featured { border-color:var(--teal); background:#f0fafa; }
+  .price-box h3 { font-size:9pt; color:#888; text-transform:uppercase; letter-spacing:1px; }
+  .price-amt { font-size:32pt; font-weight:900; color:var(--steel-dark); }
+  .price-amt span { font-size:10pt; font-weight:400; color:#888; }
+  .price-box.dim { opacity:0.5; }
+  .price-box.dim .price-amt { text-decoration:line-through; color:#999; }
+  .price-detail { font-size:8pt; color:#888; margin-top:6px; }
+  
+  /* PAGE 4: NFP + Specs + CTA */
+  .nfp-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin:12px 0; }
+  .nfp { background:var(--light-bg); border-radius:8px; padding:12px; }
+  .nfp .icon { font-size:20pt; margin-bottom:4px; }
+  .nfp h4 { font-size:9pt; font-weight:700; margin-bottom:4px; color:var(--steel-dark); }
+  .nfp p { font-size:8pt; margin:0; }
+  
+  table.specs { width:100%; border-collapse:collapse; margin:10px 0; }
+  table.specs td { padding:6px 10px; border-bottom:1px solid #f0f0f0; font-size:8.5pt; }
+  table.specs td:first-child { font-weight:600; color:#333; width:140px; }
+  
+  .cta-box { background:linear-gradient(135deg,var(--teal),var(--teal-dark)); color:#fff; border-radius:12px; padding:24px; text-align:center; margin-top:16px; }
+  .cta-box h2 { color:#fff; font-size:16pt; margin-bottom:6px; }
+  .cta-box p { color:rgba(255,255,255,0.8); font-size:9pt; margin-bottom:12px; }
+  .cta-btn { display:inline-block; background:#fff; color:var(--teal); padding:10px 32px; border-radius:6px; font-weight:700; font-size:10pt; text-decoration:none; }
+  
+  .footer { position:absolute; bottom:0.4in; left:0.6in; right:0.6in; text-align:center; font-size:7pt; color:#aaa; }
+  
+  .checklist { list-style:none; padding:0; }
+  .checklist li { padding:6px 0; font-size:9pt; border-bottom:1px solid #f0f0f0; }
+  .checklist li::before { content:"✅ "; }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: COVER -->
+<div class="page cover">
+  <div class="badge">AI-POWERED CUSTOMER SUPPORT FOR NOT-FOR-PROFITS</div>
+  <div style="height:24px"></div>
+  <h1>Your visitors have<br>questions. <span>Answer<br>them instantly.</span></h1>
+  <p class="sub">TBM AI Assistant is an intelligent chatbot that lives on your website, answers visitor questions 24/7, and connects people with your team when needed.</p>
+  <p class="sub" style="font-size:11pt;color:#fff;font-weight:600;">One line of code. Your entire website's knowledge. Instant answers.</p>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-num">45+</div><div class="stat-lbl">Features</div></div>
+    <div class="stat-box"><div class="stat-num">&lt;2s</div><div class="stat-lbl">Response Time</div></div>
+    <div class="stat-box"><div class="stat-num">24/7</div><div class="stat-lbl">Availability</div></div>
+    <div class="stat-box"><div class="stat-num">$8</div><div class="stat-lbl">Per Month</div></div>
+  </div>
+  <div class="footer" style="color:rgba(255,255,255,0.4);">TBM AI Assistant — Empowering not-for-profits to serve their communities better</div>
+</div>
+
+<!-- PAGE 2: HOW IT WORKS + FEATURES -->
+<div class="page">
+  <h2>How It Works</h2>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-t">We pull your website content</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-t">AI learns it deeply</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-t">Visitors get instant answers</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-t">Handoff to your team when needed</div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-t">You get insights & analytics</div></div>
+  </div>
+  
+  <h2>Features</h2>
+  <div class="feat-grid">
+    <div class="feat"><div class="feat-icon">🤖</div><h3>AI-Powered Answers</h3><ul><li>Answers from YOUR content — never makes things up</li><li>Cites sources so visitors can verify</li><li>AI-generated follow-up suggestions</li><li>Multi-language (English + Spanish)</li></ul></div>
+    <div class="feat"><div class="feat-icon">💬</div><h3>Smart Chat Widget</h3><ul><li>Custom branding — your colors, logo, name</li><li>Pre-chat form (collect name & email)</li><li>Quick-reply buttons for common questions</li><li>Proactive greeting, mobile-responsive</li></ul></div>
+    <div class="feat"><div class="feat-icon">🧑‍💼</div><h3>Human Handoff</h3><ul><li>Built-in contact form with email routing</li><li>Auto-detects frustration, offers human help</li><li>Business hours with away message</li><li>Email notifications on contact requests</li></ul></div>
+    <div class="feat"><div class="feat-icon">📊</div><h3>Analytics Dashboard</h3><ul><li>Real-time conversation monitor</li><li>CSAT ratings, auto-tagged topics</li><li>Unanswered questions log (content gaps)</li><li>Smart insights & recommendations</li></ul></div>
+    <div class="feat"><div class="feat-icon">🔧</div><h3>Admin Control</h3><ul><li>Guidance rules — shape how the bot answers</li><li>Banned words filter, A/B testing</li><li>Scheduled announcements</li><li>Knowledge base article browser</li></ul></div>
+    <div class="feat"><div class="feat-icon">🔗</div><h3>Integration</h3><ul><li>Full REST API (30+ endpoints)</li><li>Webhooks for real-time events</li><li>Bulk content upload, auto-crawl URLs</li><li>WhatsApp support via Twilio</li></ul></div>
+  </div>
+  <div class="footer">TBM AI Assistant — Product Brochure | Page 2</div>
+</div>
+
+<!-- PAGE 3: COMPARISON + PRICING -->
+<div class="page">
+  <h2>How We Compare</h2>
+  <table class="comp">
+    <thead><tr><th>Feature</th><th class="ours">TBM AI Assistant</th><th>Intercom</th><th>Drift</th><th>Tidio/Lyro</th><th>Chatbase</th></tr></thead>
+    <tbody>
+      <tr><td class="feat-name">Monthly cost</td><td class="ours-col"><strong>~$8</strong></td><td>$130+</td><td>$2,500+</td><td>$39+</td><td>$19+</td></tr>
+      <tr><td class="feat-name">Per-seat pricing</td><td class="ours-col yes">None</td><td>$39/seat</td><td>$80/seat</td><td>$25/seat</td><td>None</td></tr>
+      <tr><td class="feat-name">Per-resolution fees</td><td class="ours-col yes">None</td><td>$0.99 each</td><td>None</td><td>$0.50 each</td><td>None</td></tr>
+      <tr><td class="feat-name">AI from your content</td><td class="ours-col yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td></tr>
+      <tr><td class="feat-name">Pre-chat form</td><td class="ours-col yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="no">❌</td></tr>
+      <tr><td class="feat-name">Human handoff</td><td class="ours-col yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="no">❌</td></tr>
+      <tr><td class="feat-name">CSAT surveys</td><td class="ours-col yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="no">❌</td><td class="no">❌</td></tr>
+      <tr><td class="feat-name">Unanswered tracking</td><td class="ours-col yes">✅</td><td class="yes">✅</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td></tr>
+      <tr><td class="feat-name">Guidance rules</td><td class="ours-col yes">✅</td><td class="yes">✅</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td></tr>
+      <tr><td class="feat-name">A/B testing</td><td class="ours-col yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="no">❌</td><td class="no">❌</td></tr>
+      <tr><td class="feat-name">Webhooks</td><td class="ours-col yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="no">❌</td><td class="no">❌</td></tr>
+      <tr><td class="feat-name">Auto-crawl website</td><td class="ours-col yes">✅</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td><td class="yes">✅</td></tr>
+      <tr><td class="feat-name">WhatsApp</td><td class="ours-col yes">✅</td><td class="yes">✅</td><td class="no">❌</td><td class="yes">✅</td><td class="no">❌</td></tr>
+      <tr><td class="feat-name">Data ownership</td><td class="ours-col"><strong>Your DB</strong></td><td>Theirs</td><td>Theirs</td><td>Theirs</td><td>Theirs</td></tr>
+      <tr><td class="feat-name">Multi-org</td><td class="ours-col yes">✅ Built-in</td><td class="no">Separate</td><td class="no">Separate</td><td class="no">Separate</td><td class="no">Separate</td></tr>
+    </tbody>
+  </table>
+  
+  <h2 style="margin-top:20px;">Pricing</h2>
+  <p style="font-size:12pt;font-weight:600;color:var(--steel-dark);">Simple. Transparent. No surprises.</p>
+  <div class="price-row">
+    <div class="price-box featured"><h3>TBM AI Assistant</h3><div class="price-amt">$8<span>/mo</span></div><div class="price-detail">Hosting + AI included<br>No per-seat fees<br>Unlimited conversations</div></div>
+    <div class="price-box dim"><h3>Intercom</h3><div class="price-amt">$130+<span>/mo</span></div><div class="price-detail">+ $39/seat + $0.99/resolution<br>50 chats/day ≈ $1,600/mo</div></div>
+    <div class="price-box dim"><h3>Drift</h3><div class="price-amt">$2,500+<span>/mo</span></div><div class="price-detail">Annual contract required<br>Enterprise: $80K-$150K/yr</div></div>
+  </div>
+  <div class="footer">TBM AI Assistant — Product Brochure | Page 3</div>
+</div>
+
+<!-- PAGE 4: NFP + SPECS + CTA -->
+<div class="page">
+  <h2>Built for Not-for-Profits</h2>
+  <div class="nfp-grid">
+    <div class="nfp"><div class="icon">💰</div><h4>Budget-Conscious</h4><p>$8/mo vs $130+ for competitors. Built for organizations that watch every dollar.</p></div>
+    <div class="nfp"><div class="icon">👥</div><h4>Volunteer-Friendly</h4><p>Bot handles routine questions so your team focuses on what matters most.</p></div>
+    <div class="nfp"><div class="icon">📋</div><h4>Program-Heavy</h4><p>Registration, tryouts, fees, financial aid — the bot knows it all.</p></div>
+    <div class="nfp"><div class="icon">🌍</div><h4>Community-Focused</h4><p>Multi-language support, warm tone, and accessibility built in.</p></div>
+    <div class="nfp"><div class="icon">📊</div><h4>Accountable</h4><p>Full analytics to report impact to your board and donors.</p></div>
+    <div class="nfp"><div class="icon">🔒</div><h4>Your Data</h4><p>Your data stays in your database. Not on someone else's servers.</p></div>
+  </div>
+  
+  <h2 style="margin-top:16px;">Getting Started</h2>
+  <ul class="checklist">
+    <li>We crawl your website and build your knowledge base (same day)</li>
+    <li>You review the content and adjust the bot's personality and rules</li>
+    <li>Add one line of code to your website (Squarespace, WordPress, Wix)</li>
+    <li>Go live — visitors start getting instant answers immediately</li>
+    <li>Monitor & improve with the analytics dashboard</li>
+  </ul>
+  <p style="font-size:12pt;font-weight:700;color:var(--steel-dark);margin-top:8px;">From zero to live chatbot in less than a day.</p>
+  
+  <h2 style="margin-top:16px;">Technical Specs</h2>
+  <table class="specs">
+    <tr><td>AI Model</td><td>OpenAI GPT-4o-mini</td></tr>
+    <tr><td>Response Time</td><td>&lt;2 seconds average</td></tr>
+    <tr><td>Uptime</td><td>99.9%</td></tr>
+    <tr><td>Security</td><td>HTTPS, API key auth, tenant data isolation</td></tr>
+    <tr><td>Channels</td><td>Web widget, standalone page, WhatsApp</td></tr>
+    <tr><td>Languages</td><td>English, Spanish (more on request)</td></tr>
+    <tr><td>API</td><td>Full REST API — 30+ endpoints</td></tr>
+    <tr><td>Embed</td><td>One-line script tag — any website</td></tr>
+  </table>
+  
+  <div class="cta-box">
+    <h2>Ready to give your community instant answers?</h2>
+    <p>See it in action with a live demo tailored to your organization.</p>
+    <a href="https://tbm-chatbot-production.up.railway.app/demo" class="cta-btn">See Live Demo →</a>
+  </div>
+  
+  <div class="footer">TBM AI Assistant — Empowering not-for-profits to serve their communities better, 24/7. © 2026 TBM</div>
+</div>
+
+</body>
+</html>

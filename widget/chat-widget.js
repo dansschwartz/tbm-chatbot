@@ -228,12 +228,15 @@
     var input = document.querySelector(".tbm-chat-input");
     if (input) input.placeholder = config.placeholder_text;
     var logo = document.querySelector(".tbm-chat-header-logo");
+    var fallback = document.querySelector(".tbm-avatar-fallback");
     if (logo) {
       if (config.logo_url) {
         logo.src = config.logo_url;
         logo.style.display = "";
+        if (fallback) fallback.style.display = "none";
       } else {
         logo.style.display = "none";
+        if (fallback) fallback.style.display = "";
       }
     }
     // Update welcome message
@@ -340,7 +343,27 @@
     var name = nameInput ? nameInput.value.trim() : "";
     var email = emailInput ? emailInput.value.trim() : "";
 
-    if (!name || !email) return;
+    // Validate fields
+    var valid = true;
+    if (nameInput) {
+      nameInput.classList.remove("tbm-input-error");
+      var nameErr = nameInput.nextElementSibling;
+      if (nameErr && nameErr.classList.contains("tbm-prechat-error")) nameErr.style.display = "none";
+    }
+    if (emailInput) {
+      emailInput.classList.remove("tbm-input-error");
+      var emailErr = emailInput.nextElementSibling;
+      if (emailErr && emailErr.classList.contains("tbm-prechat-error")) emailErr.style.display = "none";
+    }
+    if (!name) {
+      if (nameInput) { nameInput.classList.add("tbm-input-error"); var ne = nameInput.nextElementSibling; if (ne && ne.classList.contains("tbm-prechat-error")) { ne.textContent = "Please enter your name"; ne.style.display = "block"; } }
+      valid = false;
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (emailInput) { emailInput.classList.add("tbm-input-error"); var ee = emailInput.nextElementSibling; if (ee && ee.classList.contains("tbm-prechat-error")) { ee.textContent = !email ? "Please enter your email" : "Please enter a valid email"; ee.style.display = "block"; } }
+      valid = false;
+    }
+    if (!valid) return;
 
     visitorName = name;
     visitorEmail = email;
@@ -607,8 +630,8 @@
       '<div class="tbm-chat-window">' +
         '<div class="tbm-chat-header">' +
           '<div class="tbm-chat-header-info">' +
-            '<img class="tbm-chat-header-logo" src="" alt="" style="display:none">' +
-            '<span class="tbm-chat-header-name">Chat</span>' +
+            '<div class="tbm-chat-header-avatar"><img class="tbm-chat-header-logo" src="" alt="" style="display:none"><span class="tbm-avatar-fallback">&#x1f4ac;</span></div>' +
+            '<div class="tbm-chat-header-details"><span class="tbm-chat-header-name">Chat</span><span class="tbm-chat-header-status"><span class="tbm-status-dot"></span> Online</span></div>' +
           '</div>' +
           '<div class="tbm-chat-header-actions">' +
             '<button class="tbm-chat-articles-btn" aria-label="Browse articles" title="Help articles"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>' +
@@ -627,9 +650,12 @@
           '<div class="tbm-articles-list"></div>' +
         '</div>' +
         '<div class="tbm-prechat-form" style="display:none">' +
-          '<div class="tbm-prechat-title">Before we start, tell us about yourself</div>' +
+          '<div class="tbm-prechat-title">Welcome! Let\'s get started</div>' +
+          '<div class="tbm-prechat-subtitle">Tell us a bit about yourself so we can help you better.</div>' +
           '<input type="text" class="tbm-prechat-name" placeholder="Your name" maxlength="255">' +
+          '<div class="tbm-prechat-error"></div>' +
           '<input type="email" class="tbm-prechat-email" placeholder="Your email" maxlength="255">' +
+          '<div class="tbm-prechat-error"></div>' +
           '<button class="tbm-prechat-submit">Start Chat</button>' +
         '</div>' +
         '<div class="tbm-chat-main" style="display:flex;flex-direction:column;flex:1;min-height:0">' +
@@ -697,8 +723,12 @@
 
     closeBtn.addEventListener("click", function () {
       isOpen = false;
-      chatWindow.classList.remove("tbm-open");
-      bubble.style.display = "flex";
+      chatWindow.classList.add("tbm-closing");
+      setTimeout(function () {
+        chatWindow.classList.remove("tbm-open");
+        chatWindow.classList.remove("tbm-closing");
+        bubble.style.display = "flex";
+      }, 300);
     });
 
     // Feature 16: Export button
@@ -882,9 +912,20 @@
       if (validSources.length > 0) {
         var sourcesDiv = document.createElement("div");
         sourcesDiv.className = "tbm-chat-sources";
-        sourcesDiv.innerHTML = "Sources: " + validSources.map(function (s) {
+        var toggleBtn = document.createElement("button");
+        toggleBtn.className = "tbm-sources-toggle";
+        toggleBtn.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,4 6,8 10,4"/></svg> ' + validSources.length + ' source' + (validSources.length > 1 ? 's' : '');
+        var sourcesList = document.createElement("div");
+        sourcesList.className = "tbm-sources-list";
+        sourcesList.innerHTML = validSources.map(function (s) {
           return '<a href="' + escapeHtml(s.source_url) + '" target="_blank" rel="noopener">' + escapeHtml(s.document_title) + "</a>";
         }).join(", ");
+        toggleBtn.addEventListener("click", function () {
+          toggleBtn.classList.toggle("tbm-expanded");
+          sourcesList.classList.toggle("tbm-expanded");
+        });
+        sourcesDiv.appendChild(toggleBtn);
+        sourcesDiv.appendChild(sourcesList);
         msg.appendChild(sourcesDiv);
       }
     }

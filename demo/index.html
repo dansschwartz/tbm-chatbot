@@ -3,95 +3,343 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DC Soccer Club</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <title>DC Soccer Club — Soccer FOR ALL</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Montserrat',sans-serif;color:#333;background:#fff}
-    .demo-banner{background:#fef3cd;border-bottom:2px solid #ffc107;padding:12px 40px;text-align:center;font-size:13px;color:#856404}
-    .demo-banner strong{color:#664d03}
-    .top-bar{background:#1a1a2e;color:#fff;font-size:12px;padding:6px 40px;display:flex;justify-content:space-between}
-    .top-bar a{color:#ccc;text-decoration:none;margin:0 6px;font-size:12px}
-    nav{background:#0f0f23;padding:0 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #c41e3a}
-    .nav-logo{padding:10px 0;color:#fff;font-weight:900;font-size:20px}
+    body{font-family:'Montserrat',sans-serif;color:#333;background:#fff;-webkit-font-smoothing:antialiased}
+
+    /* === TBM Demo Banner === */
+    .tbm-banner{background:linear-gradient(135deg,#09A1A1,#5484A4);color:#fff;padding:14px 40px;text-align:center;font-size:13px;font-weight:500;letter-spacing:0.2px}
+    .tbm-banner strong{font-weight:700}
+    .tbm-banner a{color:#F6C992;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+
+    /* === Top Bar === */
+    .top-bar{background:#0e1225;color:#94a3b8;font-size:11px;padding:8px 40px;display:flex;justify-content:space-between;align-items:center}
+    .top-bar a{color:#94a3b8;text-decoration:none;margin:0 8px;transition:color .2s;font-size:11px}
+    .top-bar a:hover{color:#fff}
+    .top-bar-right{display:flex;align-items:center;gap:16px}
+    .top-phone{font-weight:600;color:#c9d1d9}
+
+    /* === Nav === */
+    nav{background:#0f1429;padding:0 40px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:3px solid #c41e3a}
+    .nav-brand{display:flex;align-items:center;gap:12px;padding:12px 0}
+    .nav-crest{width:44px;height:44px;background:linear-gradient(135deg,#c41e3a,#8b1128);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:900;box-shadow:0 2px 8px rgba(196,30,58,0.3)}
+    .nav-text{color:#fff}
+    .nav-text h1{font-size:16px;font-weight:900;letter-spacing:1px;line-height:1.1}
+    .nav-text span{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;font-weight:600}
     .nav-links{display:flex}
-    .nav-links a{color:#fff;text-decoration:none;font-size:11px;font-weight:600;text-transform:uppercase;padding:20px 12px;transition:background .2s;letter-spacing:.5px}
-    .nav-links a:hover{background:#c41e3a}
-    .hero{background:linear-gradient(135deg,#0f0f23,#1a1a3e,#0f0f23);color:#fff;text-align:center;padding:80px 40px 60px}
-    .hero h1{font-size:48px;font-weight:900;margin-bottom:15px}
-    .hero p{font-size:15px;color:#bbb;margin-bottom:30px;max-width:600px;margin-left:auto;margin-right:auto}
-    .hero-sub{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#888;margin-bottom:10px}
-    .btns{display:flex;gap:15px;justify-content:center;flex-wrap:wrap}
-    .btn{padding:14px 32px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-radius:4px;text-decoration:none;cursor:pointer;transition:all .3s;display:inline-block}
-    .btn-red{background:#c41e3a;color:#fff;border:2px solid #c41e3a}
-    .btn-red:hover{background:#a01830}
-    .btn-out{background:transparent;color:#fff;border:2px solid #fff}
-    .btn-out:hover{background:#fff;color:#0f0f23}
-    .ann{background:#c41e3a;color:#fff;text-align:center;padding:14px 40px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
-    .section{padding:60px 40px;max-width:1200px;margin:0 auto}
-    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:30px;margin-top:30px}
-    .card{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:transform .2s}
-    .card:hover{transform:translateY(-3px)}
-    .card-img{height:180px;background:linear-gradient(135deg,#1a1a3e,#2a2a5e);display:flex;align-items:center;justify-content:center;font-size:48px;opacity:.4}
+    .nav-links a{color:#c9d1d9;text-decoration:none;font-size:11px;font-weight:600;text-transform:uppercase;padding:20px 14px;transition:all .2s;letter-spacing:.5px;border-bottom:3px solid transparent;margin-bottom:-3px}
+    .nav-links a:hover{color:#fff;background:rgba(196,30,58,0.15);border-bottom-color:#c41e3a}
+    .nav-links a.active{color:#fff;border-bottom-color:#c41e3a}
+    .hamburger{display:none;background:none;border:none;color:#fff;font-size:24px;cursor:pointer}
+
+    /* === Hero === */
+    .hero{position:relative;background:linear-gradient(135deg,#0f1429 0%,#1a1e3e 40%,#0f1429 100%);color:#fff;text-align:center;padding:100px 40px 80px;overflow:hidden}
+    .hero::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+    .hero-badge{display:inline-block;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#F6C992;font-weight:700;margin-bottom:16px;padding:6px 16px;border:1px solid rgba(246,201,146,0.3);border-radius:20px}
+    .hero h2{font-size:56px;font-weight:900;margin-bottom:18px;letter-spacing:-1px;line-height:1.05}
+    .hero h2 span{color:#c41e3a}
+    .hero p{font-size:16px;color:#94a3b8;margin-bottom:36px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.7}
+    .hero-stats{display:flex;justify-content:center;gap:48px;margin-top:48px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.06)}
+    .hero-stat{text-align:center}
+    .hero-stat-num{font-size:32px;font-weight:900;color:#fff}
+    .hero-stat-label{font-size:11px;text-transform:uppercase;color:#64748b;letter-spacing:1px;margin-top:4px}
+    .btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+    .btn{padding:15px 36px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;border-radius:6px;text-decoration:none;cursor:pointer;transition:all .3s;display:inline-block;border:2px solid transparent}
+    .btn-red{background:#c41e3a;color:#fff;border-color:#c41e3a;box-shadow:0 4px 16px rgba(196,30,58,0.3)}
+    .btn-red:hover{background:#a01830;transform:translateY(-2px);box-shadow:0 6px 24px rgba(196,30,58,0.4)}
+    .btn-out{background:transparent;color:#fff;border-color:rgba(255,255,255,0.3)}
+    .btn-out:hover{background:#fff;color:#0f1429;border-color:#fff}
+
+    /* === Announcement === */
+    .ann{background:linear-gradient(90deg,#c41e3a,#e63c56);color:#fff;text-align:center;padding:14px 40px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
+
+    /* === Section === */
+    .section{padding:70px 40px;max-width:1200px;margin:0 auto}
+    .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:#c41e3a;margin-bottom:8px}
+    .section-title{font-size:30px;font-weight:800;margin-bottom:12px;color:#0f1429}
+    .section-subtitle{font-size:14px;color:#64748b;max-width:560px;line-height:1.7;margin-bottom:40px}
+
+    /* === Cards === */
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px}
+    .card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.06);transition:transform .3s,box-shadow .3s;border:1px solid #f1f5f9}
+    .card:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,0,0,0.1)}
+    .card-img{height:180px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative;overflow:hidden}
+    .card-img-1{background:linear-gradient(135deg,#1a1e3e,#2a2e5e)}
+    .card-img-2{background:linear-gradient(135deg,#c41e3a,#e63c56)}
+    .card-img-3{background:linear-gradient(135deg,#0f1429,#1a1e3e)}
+    .card-img-4{background:linear-gradient(135deg,#5484A4,#09A1A1)}
+    .card-img-5{background:linear-gradient(135deg,#F6C992,#FA6E82)}
+    .card-img-6{background:linear-gradient(135deg,#0e1225,#1a2040)}
+    .card-tag{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.5);color:#fff;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 10px;border-radius:12px;backdrop-filter:blur(4px)}
     .card-body{padding:24px}
-    .card-body h3{font-size:15px;font-weight:700;margin-bottom:10px;text-transform:uppercase;color:#1a1a2e}
-    .card-body p{font-size:13px;color:#666;line-height:1.6;margin-bottom:16px}
-    .card-btn{background:#c41e3a;color:#fff;padding:10px 24px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-radius:4px;text-decoration:none;display:inline-block}
-    .social{display:flex;gap:12px;justify-content:center;margin:20px 0}
-    .social a{width:36px;height:36px;background:#1a1a3e;color:#fff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px}
-    .sponsors{text-align:center;padding:50px 40px;background:#fff}
-    .sponsors h2{font-size:24px;font-style:italic;color:#1a1a2e;margin-bottom:20px}
-    .sp-row{display:flex;gap:40px;justify-content:center;opacity:.3;margin-top:20px}
-    .sp-box{width:120px;height:50px;background:#ddd;border-radius:4px}
-    footer{background:#0f0f23;color:#aaa;padding:40px}
-    .fg{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;max-width:1200px;margin:0 auto}
-    .fg h4{color:#fff;font-size:13px;text-transform:uppercase;margin-bottom:15px;letter-spacing:1px}
-    .fg p,.fg a{font-size:12px;color:#888;text-decoration:none;line-height:2;display:block}
-    .fb{text-align:center;padding-top:30px;margin-top:30px;border-top:1px solid #222;font-size:11px;color:#555;max-width:1200px;margin-left:auto;margin-right:auto}
-    @media(max-width:768px){.hero h1{font-size:30px}.nav-links{display:none}.fg{grid-template-columns:1fr}.cards{grid-template-columns:1fr}}
+    .card-body h3{font-size:15px;font-weight:700;margin-bottom:10px;color:#0f1429}
+    .card-body p{font-size:13px;color:#64748b;line-height:1.6;margin-bottom:18px}
+    .card-btn{display:inline-flex;align-items:center;gap:6px;color:#c41e3a;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;transition:gap .2s}
+    .card-btn:hover{gap:10px}
+
+    /* === News === */
+    .news-bg{background:#f8fafc;padding:70px 40px}
+    .news-inner{max-width:1200px;margin:0 auto}
+    .news-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:40px}
+    .news-item{background:#fff;border-radius:10px;padding:24px;box-shadow:0 1px 8px rgba(0,0,0,0.04);border-1px solid #f1f5f9;transition:transform .2s}
+    .news-item:hover{transform:translateY(-2px)}
+    .news-date{font-size:11px;color:#c41e3a;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+    .news-item h4{font-size:15px;font-weight:700;margin-bottom:8px;color:#0f1429}
+    .news-item p{font-size:13px;color:#64748b;line-height:1.6}
+
+    /* === Sponsors === */
+    .sponsors{text-align:center;padding:60px 40px;background:#fff}
+    .sponsors h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:28px}
+    .sp-row{display:flex;gap:40px;justify-content:center;align-items:center;flex-wrap:wrap}
+    .sp-box{width:120px;height:48px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+
+    /* === Social === */
+    .social-bar{text-align:center;padding:40px}
+    .social-bar p{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:16px;font-weight:600}
+    .social{display:flex;gap:12px;justify-content:center}
+    .social a{width:40px;height:40px;background:#0f1429;color:#fff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;transition:transform .2s,background .2s}
+    .social a:hover{background:#c41e3a;transform:scale(1.1)}
+
+    /* === Footer === */
+    footer{background:#0e1225;color:#94a3b8;padding:50px 40px 0}
+    .fg{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;max-width:1200px;margin:0 auto}
+    .fg h4{color:#fff;font-size:12px;text-transform:uppercase;margin-bottom:16px;letter-spacing:1.5px;font-weight:700}
+    .fg p{font-size:12px;color:#64748b;line-height:1.8}
+    .fg a{font-size:12px;color:#64748b;text-decoration:none;line-height:2.2;display:block;transition:color .2s}
+    .fg a:hover{color:#fff}
+    .footer-brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .footer-brand-crest{width:32px;height:32px;background:#c41e3a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff}
+    .footer-brand h3{font-size:14px;color:#fff;font-weight:700}
+    .fb{text-align:center;padding:24px 0;margin-top:40px;border-top:1px solid rgba(255,255,255,0.05);font-size:11px;color:#475569;max-width:1200px;margin-left:auto;margin-right:auto}
+
+    /* === Responsive === */
+    @media(max-width:768px){
+      .hero h2{font-size:32px}
+      .hero-stats{flex-direction:column;gap:20px}
+      .nav-links{display:none}
+      .hamburger{display:block}
+      .fg{grid-template-columns:1fr}
+      .cards{grid-template-columns:1fr}
+      .top-bar{padding:8px 16px}
+      nav{padding:0 16px}
+      .hero{padding:60px 20px 50px}
+      .section{padding:50px 20px}
+      .news-bg{padding:50px 20px}
+    }
   </style>
 </head>
 <body>
-  <div class="demo-banner">&#9917; <strong>DEMO:</strong> This is a preview of the AI chatbot for DC Soccer Club. Try the chat widget in the bottom-right corner!</div>
-  <div class="top-bar"><div><a href="#">&#127482;&#127480; EN</a> <a href="#">&#127466;&#127480; ES</a></div><div><a href="#">&#128231; Contact</a></div></div>
-  <nav>
-    <div class="nav-logo">&#9917; DC SOCCER CLUB</div>
-    <div class="nav-links">
-      <a href="#">Home</a><a href="#">New to Club?</a><a href="#">About</a><a href="#">Tots</a><a href="#">Recreational</a><a href="#">Pre-Travel</a><a href="#">Travel</a><a href="#">Camps</a><a href="#">Clinics</a><a href="#">News</a>
+  <!-- TBM AI Banner -->
+  <div class="tbm-banner">
+    This chatbot is powered by <strong>TBM AI</strong> &mdash; try asking a question in the bottom-right corner!
+    <a href="https://tbm-chatbot-production.up.railway.app/admin" target="_blank">Admin Dashboard &rarr;</a>
+  </div>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div>
+      <a href="#">&#127482;&#127480; English</a>
+      <a href="#">&#127466;&#127480; Espa&ntilde;ol</a>
     </div>
+    <div class="top-bar-right">
+      <a href="mailto:info@dcsoccerclub.org">&#128231; info@dcsoccerclub.org</a>
+      <span class="top-phone">&#9742; (202) 555-0199</span>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-brand">
+      <div class="nav-crest">DC</div>
+      <div class="nav-text">
+        <h1>DC SOCCER CLUB</h1>
+        <span>Est. 2009 &middot; Washington, DC</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="#" class="active">Home</a>
+      <a href="#">New to Club?</a>
+      <a href="#">About</a>
+      <a href="#">Tots</a>
+      <a href="#">Recreational</a>
+      <a href="#">Travel</a>
+      <a href="#">Academy</a>
+      <a href="#">Camps</a>
+      <a href="#">News</a>
+      <a href="#">Contact</a>
+    </div>
+    <button class="hamburger">&#9776;</button>
   </nav>
+
+  <!-- Hero -->
   <div class="hero">
-    <div class="hero-sub">Welcome to</div>
-    <h1>DC SOCCER CLUB</h1>
-    <p>Soccer FOR ALL. From Tots to Academy.<br>Serving 7,500+ players U4-U19 across Washington, DC.</p>
+    <div class="hero-badge">Spring 2026 Registration Open</div>
+    <h2>Soccer <span>FOR ALL</span></h2>
+    <p>From Tots to Academy &mdash; DC Soccer Club is the premier community soccer organization in Washington, DC, serving 7,500+ players ages U4 to U19.</p>
     <div class="btns">
-      <a href="#" class="btn btn-red">Upcoming Registrations</a>
+      <a href="#" class="btn btn-red">Register Now &rarr;</a>
       <a href="#" class="btn btn-out">New to the Club?</a>
     </div>
-  </div>
-  <div class="ann">&#127942; DC Soccer Club Accepted into MLS NEXT Academy Division & Girls Academy (GA) ASPIRE - 2026-2027 Season</div>
-  <div class="section">
-    <div class="cards">
-      <div class="card"><div class="card-img">&#128085;</div><div class="card-body"><h3>Fan Apparel Available</h3><p>DC Soccer Club merch is now available on our online Spirit Wear store! Choose shipping to your home or pick up at PJ's Soccer Shop of Bethesda.</p><a href="#" class="card-btn">Online Store</a></div></div>
-      <div class="card"><div class="card-img">&#128197;</div><div class="card-body"><h3>Age Group Change for Travel Teams</h3><p>Travel teams moving to school year cut off of Aug 1 - July 31 beginning in the 2026-2027 season. All Academy, Travel and Select level teams will follow the new cutoff.</p><a href="#" class="card-btn">Read More</a></div></div>
-      <div class="card"><div class="card-img">&#128231;</div><div class="card-body"><h3>Join Our Newsletter</h3><p>Subscribe to receive monthly emails from our communications team with updates on what is happening in our club and in our community.</p><a href="#" class="card-btn">Subscribe</a></div></div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-num">7,500+</div><div class="hero-stat-label">Players</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">400+</div><div class="hero-stat-label">Teams</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">16</div><div class="hero-stat-label">Years</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">U4&ndash;U19</div><div class="hero-stat-label">Age Range</div></div>
     </div>
   </div>
-  <div style="text-align:center;padding:30px 40px">
-    <div class="social"><a href="#">f</a><a href="#">X</a><a href="#">&#128247;</a><a href="#">&#9654;</a></div>
-    <p style="font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#888;margin-top:8px">Connect with Us</p>
+
+  <!-- Announcement -->
+  <div class="ann">&#127942; DC Soccer Club Accepted into MLS NEXT Academy Division &amp; Girls Academy (GA) ASPIRE &mdash; 2026-2027 Season</div>
+
+  <!-- Programs Section -->
+  <div class="section">
+    <div class="section-label">Our Programs</div>
+    <div class="section-title">Something for Every Player</div>
+    <div class="section-subtitle">Whether your child is kicking a ball for the first time or competing at the highest level, we have a program designed for them.</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-img card-img-1"><span style="opacity:.3;font-size:64px">&#9917;</span><span class="card-tag">Ages 3&ndash;5</span></div>
+        <div class="card-body">
+          <h3>Tots Program</h3>
+          <p>Fun, non-competitive introduction to soccer. Parent participation encouraged with age-appropriate drills and games.</p>
+          <a href="#" class="card-btn">Learn More &rarr;</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img card-img-2"><span style="opacity:.3;font-size:64px">&#127941;</span><span class="card-tag">Ages 5&ndash;12</span></div>
+        <div class="card-body">
+          <h3>Recreational League</h3>
+          <p>Community-based play focused on development, teamwork and fun. All skill levels welcome with balanced teams.</p>
+          <a href="#" class="card-btn">Learn More &rarr;</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img card-img-3"><span style="opacity:.3;font-size:64px">&#128293;</span><span class="card-tag">Ages 9&ndash;19</span></div>
+        <div class="card-body">
+          <h3>Travel &amp; Academy</h3>
+          <p>Competitive teams for advanced players. Includes Travel, Select, MLS NEXT, and Girls Academy pathways.</p>
+          <a href="#" class="card-btn">Learn More &rarr;</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img card-img-4"><span style="opacity:.3;font-size:64px">&#9728;&#65039;</span><span class="card-tag">Summer &amp; Winter</span></div>
+        <div class="card-body">
+          <h3>Camps &amp; Clinics</h3>
+          <p>Intensive week-long camps for skill development, plus specialized clinics for goalkeepers, strikers and more.</p>
+          <a href="#" class="card-btn">Learn More &rarr;</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img card-img-5"><span style="opacity:.3;font-size:64px">&#128085;</span><span class="card-tag">New!</span></div>
+        <div class="card-body">
+          <h3>Fan Apparel</h3>
+          <p>DC Soccer Club merch now available! Get jerseys, hoodies, and gear from our online Spirit Wear store.</p>
+          <a href="#" class="card-btn">Shop Now &rarr;</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img card-img-6"><span style="opacity:.3;font-size:64px">&#10084;&#65039;</span><span class="card-tag">Inclusive</span></div>
+        <div class="card-body">
+          <h3>TOPSoccer &amp; Financial Aid</h3>
+          <p>Adaptive soccer for athletes with disabilities, plus financial assistance ensuring no child is turned away.</p>
+          <a href="#" class="card-btn">Learn More &rarr;</a>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="sponsors"><h2><em>Thank You to Our Sponsors and Partners</em></h2><div class="sp-row"><div class="sp-box"></div><div class="sp-box"></div><div class="sp-box"></div><div class="sp-box"></div><div class="sp-box"></div></div></div>
+
+  <!-- News Section -->
+  <div class="news-bg">
+    <div class="news-inner">
+      <div class="section-label">Latest News</div>
+      <div class="section-title">Club Updates</div>
+      <div class="news-grid">
+        <div class="news-item">
+          <div class="news-date">April 18, 2026</div>
+          <h4>Age Group Change for Travel Teams</h4>
+          <p>Travel teams moving to school year cutoff of Aug 1 - July 31 beginning in the 2026-2027 season for all Academy, Travel and Select teams.</p>
+        </div>
+        <div class="news-item">
+          <div class="news-date">April 10, 2026</div>
+          <h4>Spring Recreational Season Kickoff</h4>
+          <p>The spring recreational league kicks off this Saturday at fields across DC. Check your team schedule on PlayMetrics.</p>
+        </div>
+        <div class="news-item">
+          <div class="news-date">March 28, 2026</div>
+          <h4>Summer Camp Registration Now Open</h4>
+          <p>Half-day and full-day camp options available for ages 4-14. Early bird pricing ends May 1st.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Social -->
+  <div class="social-bar">
+    <p>Connect With Us</p>
+    <div class="social">
+      <a href="#" title="Facebook">f</a>
+      <a href="#" title="X / Twitter">X</a>
+      <a href="#" title="Instagram">&#128247;</a>
+      <a href="#" title="YouTube">&#9654;</a>
+      <a href="#" title="TikTok">T</a>
+    </div>
+  </div>
+
+  <!-- Sponsors -->
+  <div class="sponsors">
+    <h3>Thank You to Our Sponsors &amp; Partners</h3>
+    <div class="sp-row">
+      <div class="sp-box">Sponsor 1</div>
+      <div class="sp-box">Sponsor 2</div>
+      <div class="sp-box">Sponsor 3</div>
+      <div class="sp-box">Sponsor 4</div>
+      <div class="sp-box">Sponsor 5</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
   <footer>
     <div class="fg">
-      <div><h4>Contact</h4><p>2201 Wisconsin Ave NW, Suite 200<br>Washington, DC 20007</p></div>
-      <div><h4>Programs</h4><a href="#">Recreational League</a><a href="#">Pre-Travel Academy</a><a href="#">Travel Program</a><a href="#">Camps & Clinics</a><a href="#">TOPSoccer</a></div>
-      <div><h4>Resources</h4><a href="#">Financial Aid</a><a href="#">PlayMetrics Help</a><a href="#">Club Policies</a><a href="#">Safety</a><a href="#">FAQs</a></div>
+      <div>
+        <div class="footer-brand">
+          <div class="footer-brand-crest">DC</div>
+          <h3>DC Soccer Club</h3>
+        </div>
+        <p>A 501(c)(3) tax-exempt community soccer organization dedicated to providing quality soccer programs for all youth in the greater Washington, DC area.</p>
+      </div>
+      <div>
+        <h4>Programs</h4>
+        <a href="#">Tots (Ages 3-5)</a>
+        <a href="#">Recreational League</a>
+        <a href="#">Pre-Travel Academy</a>
+        <a href="#">Travel Program</a>
+        <a href="#">Camps &amp; Clinics</a>
+        <a href="#">TOPSoccer</a>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <a href="#">Financial Aid</a>
+        <a href="#">PlayMetrics Help</a>
+        <a href="#">Club Policies</a>
+        <a href="#">Safety &amp; Concussion</a>
+        <a href="#">Volunteer</a>
+        <a href="#">FAQs</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <p>2201 Wisconsin Ave NW<br>Suite 200<br>Washington, DC 20007</p>
+        <p style="margin-top:12px">
+          <a href="mailto:info@dcsoccerclub.org">info@dcsoccerclub.org</a>
+          <a href="#">(202) 555-0199</a>
+        </p>
+      </div>
     </div>
-    <div class="fb">&copy; 2026 DC Soccer Club. A 501(c)(3) tax-exempt organization.</div>
+    <div class="fb">&copy; 2026 DC Soccer Club. All rights reserved. A 501(c)(3) tax-exempt organization.</div>
   </footer>
 
-  <!-- Real chat widget pointing at production API -->
+  <!-- TBM AI Chatbot Widget -->
   <script src="/widget/chat-widget.js" data-org="dcsc"></script>
 </body>
 </html>
